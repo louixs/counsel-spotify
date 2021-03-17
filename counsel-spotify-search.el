@@ -24,14 +24,15 @@
 
 (require 'json)
 (require 'url)
+(require 'counsel-spotify-oauth)
 
 (defcustom counsel-spotify-spotify-api-url "https://api.spotify.com/v1"
   "Variable to define spotify API url."
   :type 'string :group 'counsel-spotify)
 
-(defcustom counsel-spotify-spotify-api-authentication-url "https://accounts.spotify.com/api/token"
-  "Variable to define spotify API url for getting the access token."
-  :type 'string :group 'counsel-spotify)
+;; (defcustom counsel-spotify-spotify-api-authentication-url "https://accounts.spotify.com/api/token"
+;;   "Variable to define spotify API url for getting the access token."
+;;   :type 'string :group 'counsel-spotify)
 
 (defcustom counsel-spotify-client-id ""
   "Spotify application client ID."
@@ -83,13 +84,24 @@
                      (let ((,results-variable (json-read)))
                        ,@body)))))
 
-(cl-defun counsel-spotify-make-query (term &key type filter)
+(cl-defun counsel-spotify-make-query (search-term &key type filter)
   "Make a Spotify query to search for TERM of type TYPE with a FILTER."
   (when (null type) (error "Must supply a type of object to search for"))
   (format "%s/search?q=%s&type=%s"
           counsel-spotify-spotify-api-url
-          (if filter (format "%s:%s" filter term) term)
+          (if filter (format "%s:%s" filter search-term) search-term)
           (mapconcat #'symbol-name type ",")))
+
+(cl-defun counsel-spotify-oauth2-make-query (search-term &key type filter)
+  "Make a Spotify query to search for TERM of type TYPE with a FILTER."
+  (when (null type) (error "Must supply a type of object to search for"))
+  (let ((search-type (mapconcat #'symbol-name type ",")))
+    (cond
+     ((string-equal search-type "user-playlist") (concat counsel-spotify-spotify-api-url "/me/playlists"))
+      (t (format "%s/search?q=%s&type=%s"
+                 counsel-spotify-spotify-api-url
+                 (if filter (format "%s:%s" filter search-term) search-term)
+                 search-type)))))
 
 (cl-defun counsel-spotify-search (a-callback &rest rest)
   "Call A-CALLBACK with the parsed result of the query described by REST."
@@ -97,6 +109,24 @@
     (counsel-spotify-with-auth-token (auth-token)
       (counsel-spotify-with-query-results (auth-token query-url results)
         (funcall a-callback (counsel-spotify-parse-response results))))))
+
+;; oauth2
+(defun get-last-element (l)
+  (car (car (last l))))
+
+(cl-defun counsel-spotify-oauth2-query-response (&rest rest)
+  (let* ((query-url (apply #'counsel-spotify-oauth2-make-query rest))
+         (token (counsel-spotify-oauth-fetch-token))
+         (results (oauth2-query-results token query-url))
+         (category (get-last-element rest)))
+    (counsel-spotify-oauth2-parse-response results category)))
+
+(cl-defun counsel-spotify-oauth2-search (a-callback &rest rest)
+  (let* ((query-url (apply #'counsel-spotify-oauth2-make-query rest))
+         (token (counsel-spotify-oauth-fetch-token))
+         (results (oauth2-query-results token query-url))
+         (category (get-last-element rest)))
+    (funcall a-callback (counsel-spotify-oauth2-parse-response results category))))
 
 (cl-defgeneric counsel-spotify-parse-spotify-object (a-spotify-object type)
   "Parse A-SPOTIFY-OBJECT knowing it has the type TYPE.")
@@ -136,8 +166,21 @@
 
 (defun counsel-spotify-parse-response (a-spotify-alist-response)
   "Parse A-SPOTIFY-ALIST-RESPONSE iterating through every category."
-  (cl-mapcan (lambda (category) (counsel-spotify-parse-items a-spotify-alist-response  (car category)))
-             a-spotify-alist-response))
+  (cl-mapcan
+   (lambda (category)
+     (counsel-spotify-parse-items a-spotify-alist-response  (car category)))
+   a-spotify-alist-response))
+
+;; oauth2
+(defun counsel-spotify-oauth2-parse-items (a-spotify-alist-response a-type)
+  (let ((items (alist-get 'items a-spotify-alist-response)))
+    (mapcar (lambda (item) (counsel-spotify-parse-spotify-object item a-type))
+            items)))
+
+(defun counsel-spotify-oauth2-parse-response (a-spotify-alist-response category)
+  (cond
+   ((eq category 'user-playlist) (counsel-spotify-oauth2-parse-items a-spotify-alist-response category))
+   (t (counsel-spotify-parse-response a-spotify-alist-response))))
 
 (provide 'counsel-spotify-search)
 ;;; counsel-spotify-search.el ends here

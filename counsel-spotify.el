@@ -72,13 +72,31 @@
 
 (defun counsel-spotify-update-ivy-candidates (list-of-counsel-spotify-objects)
   "Tell Ivy to update the minibuffer candidates with the LIST-OF-COUNSEL-SPOTIFY-OBJECTS."
-  (ivy-update-candidates (mapcar #'counsel-spotify-format list-of-counsel-spotify-objects)))
+ (ivy-update-candidates (mapcar #'counsel-spotify-format list-of-counsel-spotify-objects)))
 
 (defmacro counsel-spotify-search-by (&rest search-args)
   "Create the function to search by SEARCH-KEYWORD and other SEARCH-ARGS."
   `(lambda (search-term)
      (counsel-spotify-search #'counsel-spotify-update-ivy-candidates search-term ,@search-args)
      0))
+
+;; oauth2
+(defmacro counsel-spotify-oauth2-search-by (&rest search-args)
+  "Create the function to search by SEARCH-KEYWORD and other SEARCH-ARGS."
+  `(lambda (search-term)
+     (counsel-spotify-oauth2-search #'counsel-spotify-update-ivy-candidates search-term ,@search-args)
+     0))
+
+(defmacro counsel-spotify-oauth2-query-response-by (&rest search-args)
+  "Create the function to search by SEARCH-KEYWORD and other SEARCH-ARGS."
+  `(lambda (search-term)
+     (counsel-spotify-oauth2-query-response search-term ,@search-args)
+     0))
+
+
+;; oauth2
+
+
 
 ;;;###autoload
 (defun counsel-spotify-search-track ()
@@ -105,6 +123,24 @@
   (interactive)
   (counsel-spotify-verify-credentials)
   (ivy-read "Search playlist: " (counsel-spotify-search-by :type '(playlist)) :dynamic-collection t :action #'counsel-spotify-play-string))
+
+;;;###autoload
+(defun counsel-spotify-search-user-playlist ()
+  "Bring Ivy frontend to choose and play a playlist from your current user.
+   dynamic-collection is not turned on as the spotify API returns a list of playlist.
+   There is no search API that dynamically updates the result."
+  (interactive)
+  (counsel-spotify-verify-credentials)
+  ;; TODO: If there are more than 20 playlists, you need to paginate
+  ;; by suppliyng offset to get the remaining playlists
+  ;; also because we get the list and this is not a search
+  ;; we don't need to call the API everytime we enter the search-term
+  (ivy-read
+   "Search your user playlist: "
+   (lambda (str pred code)
+     (mapcar #'counsel-spotify-format
+             (counsel-spotify-oauth2-query-response search-term :type '(user-playlist))))
+   :action #'counsel-spotify-play-string))
 
 ;;;###autoload
 (defun counsel-spotify-search-album ()
