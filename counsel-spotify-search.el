@@ -97,7 +97,7 @@
   (when (null type) (error "Must supply a type of object to search for"))
   (let ((search-type (mapconcat #'symbol-name type ",")))
     (cond
-     ((string-equal search-type "user-playlist") (concat counsel-spotify-spotify-api-url "/me/playlists"))
+     ((string-equal search-type "user-playlist") (concat counsel-spotify-spotify-api-url "/me/playlists?limit=50"))
       (t (format "%s/search?q=%s&type=%s"
                  counsel-spotify-spotify-api-url
                  (if filter (format "%s:%s" filter search-term) search-term)

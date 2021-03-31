@@ -36,7 +36,7 @@
   "Variable to define redirect url for retrieving auth token."
   :type 'string :group 'counsel-spotify)
 
-(defcustom counsel-spotify-spotify-api-auth-token ""
+(defcustom counsel-spotify-spotify-api-auth-token nil
   "Auth token data returned by oauth2-auth-and-store function from the oauth2 package."
   :type 'string :group 'counsel-spotify)
 
@@ -69,7 +69,7 @@
 
 (defun counsel-spotify-oauth-fetch-token ()
   ""
-  (when (not counsel-spotify-spotify-api-auth-token)
+  (when (eq counsel-spotify-spotify-api-auth-token nil)
     (start-redirect-server)
     (setq
      counsel-spotify-spotify-api-auth-token
@@ -107,12 +107,12 @@
   (oauth2-refresh-access counsel-spotify-spotify-api-auth-token))
 
 ;; fetch token
-(counsel-spotify-oauth-fetch-token)
+;; (counsel-spotify-oauth-fetch-token)
 ;; It's stored in this variable
 ;; counsel-spotify-spotify-api-auth-token
 
 ;; refesh token if needed
-(refresh-token)
+;;(refresh-token)
 
 ;; then retrieve
 ;; For example, user-data can be retrieved and stored as user-data like this
@@ -121,10 +121,6 @@
     (oauth2-url-retrieve-synchronously token url)
     (goto-char url-http-end-of-headers)
     (json-read)))
-
-;;(oauth2-query-results counsel-spotify-spotify-api-auth-token "https://api.spotify.com/v1/me")
-
-
 
 (provide 'counsel-spotify-oauth)
 ;;; counsel-spotify-oauth.el ends here

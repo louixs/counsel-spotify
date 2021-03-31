@@ -139,7 +139,7 @@
    "Search your user playlist: "
    (lambda (str pred code)
      (mapcar #'counsel-spotify-format
-             (counsel-spotify-oauth2-query-response search-term :type '(user-playlist))))
+             (counsel-spotify-oauth2-query-response "" :type '(user-playlist))))
    :action #'counsel-spotify-play-string))
 
 ;;;###autoload
