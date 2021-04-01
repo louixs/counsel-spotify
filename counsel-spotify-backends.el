@@ -91,6 +91,11 @@ Some clients, such as mopidy, can run as system services."
   "Tell Darwin BACKEND to execute the given ACTION."
   (shell-command (concat "osascript -e 'tell application \"Spotify\" to '" (shell-quote-argument (funcall action (commands backend))))))
 
+;; Find out if repeat is set to true
+;; (string-trim (shell-command-to-string (concat "osascript -e 'tell application \"Spotify\" to '" "repeating enabled")))
+;; Use this to toggle
+
+
 (cl-defmethod counsel-spotify-tell-backend-to ((backend counsel-spotify-linux-backend) action)
   "Tell Linux BACKEND to execute the given ACTION."
   (counsel-spotify-call-spotify-via-dbus (funcall action (commands backend))))
