@@ -93,11 +93,6 @@
      (counsel-spotify-oauth2-query-response search-term ,@search-args)
      0))
 
-
-;; oauth2
-
-
-
 ;;;###autoload
 (defun counsel-spotify-search-track ()
   "Bring Ivy frontend to choose and play a track."
