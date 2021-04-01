@@ -53,6 +53,7 @@
   (interactive)
   (counsel-spotify-tell-backend-to counsel-spotify-current-backend #'playpause))
 
+
 ;;;###autoload
 (defun counsel-spotify-previous ()
   "Start playing previous song."
@@ -64,6 +65,12 @@
   "Start playing next song."
   (interactive)
   (counsel-spotify-tell-backend-to counsel-spotify-current-backend #'next))
+
+;;;###autoload
+(defun counsel-spotify-repeat ()
+  "Set repeat"
+  (interactive)
+  (counsel-spotify-tell-backend-to counsel-spotify-current-backend #'setrepeat))
 
 
 ;;;;;;;;;;;;;;;;;;;
