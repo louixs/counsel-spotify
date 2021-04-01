@@ -42,16 +42,28 @@ Some clients, such as mopidy, can run as system services."
   ((play-command :initarg :play :initform "" :reader play)
    (playpause-command :initarg :playpause :initform "" :reader playpause)
    (next-command :initarg :next :initform "" :reader next)
-   (previous-command :initarg :previous :initform "" :reader previous)))
+   (previous-command :initarg :previous :initform "" :reader previous)
+   (setrepeat-command :initarg :setrepeat :initform "" :reader setrepeat)))
 
 (defclass counsel-spotify-backend ()
   ((commands :initarg :commands :reader commands)))
 
 (defclass counsel-spotify-darwin-backend (counsel-spotify-backend)
-  ((commands :initform (make-instance 'counsel-spotify-backend-commands :play "play track" :playpause "playpause" :next "next track" :previous "previous track"))))
+  ((commands :initform (make-instance 'counsel-spotify-backend-commands
+                                      :play "play track"
+                                      :playpause "playpause"
+                                      :next "next track"
+                                      :previous "previous track"
+                                      :setrepeat "set repeating to true"))))
 
 (defclass counsel-spotify-linux-backend (counsel-spotify-backend)
-  ((commands :initform (make-instance 'counsel-spotify-backend-commands :play "Play" :playpause "PlayPause" :next "Next" :previous "Previous"))))
+  ((commands :initform (make-instance 'counsel-spotify-backend-commands
+                                      :play "Play"
+                                      :playpause "PlayPause"
+                                      :next "Next"
+                                      :previous "Previous"
+                                      :setrepeat "Repeat"
+                                      ))))
 
 (defvar counsel-spotify-current-backend
   (pcase system-type
@@ -67,6 +79,10 @@ Some clients, such as mopidy, can run as system services."
                               "org.mpris.MediaPlayer2.Player"
                               ,method
                               ,@args)))
+
+(defun counsel-spotify-tell-spotify-to (cmd)
+  (let ((osascript-str (concat "osascript -e 'tell application \"Spotify\" to " cmd "'")))
+    (shell-command osascript-str)))
 
 (cl-defgeneric counsel-spotify-tell-backend-to (backend action)
   "Tell the given BACKEND to execute the given ACTION.")
