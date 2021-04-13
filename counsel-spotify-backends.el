@@ -114,5 +114,18 @@ Some clients, such as mopidy, can run as system services."
   "Call play on an the spotify object held as a property of the SPOTIFY-OBJECT-AS-STRING."
   (counsel-spotify-do-play counsel-spotify-current-backend (counsel-spotify-unwrap-spotify-object spotify-object-as-string)))
 
+
+;; need refactoring though
+;; prototyping the idea
+(defun repeat? ()
+  (-> (shell-command-to-string (concat "osascript -e 'tell application \"Spotify\" to '" "repeating"))
+    (string-trim)))
+
+(defun toggle-repeat ()
+  (if (string-equal (repeat?) "true")
+      (shell-command (concat "osascript -e 'tell application \"Spotify\" to " "set repeating to false" " '"))
+    (shell-command (concat "osascript -e 'tell application \"Spotify\" to " "set repeating to true" " '"))))
+
+
 (provide 'counsel-spotify-backends)
 ;;; counsel-spotify-backends.el ends here
