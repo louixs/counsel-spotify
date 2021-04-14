@@ -186,6 +186,5 @@
   (counsel-spotify-verify-credentials)
   (ivy-read "Search episode: " (counsel-spotify-oauth2-search-by :type '(episode)) :dynamic-collection t :action #'counsel-spotify-play-string))
 
-
 (provide 'counsel-spotify)
 ;;; counsel-spotify.el ends here
