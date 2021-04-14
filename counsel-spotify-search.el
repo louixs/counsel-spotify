@@ -98,10 +98,11 @@
   (let ((search-type (mapconcat #'symbol-name type ",")))
     (cond
      ((string-equal search-type "user-playlist") (concat counsel-spotify-spotify-api-url "/me/playlists?limit=50"))
-      (t (format "%s/search?q=%s&type=%s"
-                 counsel-spotify-spotify-api-url
-                 (if filter (format "%s:%s" filter search-term) search-term)
-                 search-type)))))
+     ((string-equal search-type "current-playback") (concat counsel-spotify-spotify-api-url "/me/player"))
+     (t (format "%s/search?q=%s&type=%s"
+                counsel-spotify-spotify-api-url
+                (if filter (format "%s:%s" filter search-term) search-term)
+                search-type)))))
 
 (cl-defun counsel-spotify-search (a-callback &rest rest)
   "Call A-CALLBACK with the parsed result of the query described by REST."
@@ -177,9 +178,27 @@
     (mapcar (lambda (item) (counsel-spotify-parse-spotify-object item a-type))
             items)))
 
+(defun get-artist-name (response)
+  (->> response
+    (alist-get 'item)
+    (alist-get 'artists)
+    (-map (lambda (artist) (alist-get 'name artist)))
+    (--reduce (concat acc " " it))))
+
+(defun get-track-name (response)
+  (->> response
+    (alist-get 'item)
+    (alist-get 'name)))
+
+(defun counsel-spotify-oauth2-parse-current-playback (a-spotify-alist-response)
+  (let* ((artist-name (get-artist-name a-spotify-alist-response))
+         (track-name (get-track-name a-spotify-alist-response)))
+    (concat artist-name " - " track-name)))
+
 (defun counsel-spotify-oauth2-parse-response (a-spotify-alist-response category)
   (cond
    ((eq category 'user-playlist) (counsel-spotify-oauth2-parse-items a-spotify-alist-response category))
+   ((eq category 'current-playback) (counsel-spotify-oauth2-parse-current-playback a-spotify-alist-response))
    (t (counsel-spotify-parse-response a-spotify-alist-response))))
 
 (provide 'counsel-spotify-search)

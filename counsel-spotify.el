@@ -145,6 +145,13 @@
    :action #'counsel-spotify-play-string))
 
 ;;;###autoload
+(defun counsel-spotify-show-current-track ()
+  (interactive)
+  (counsel-spotify-verify-credentials)
+  ;; GET https://api.spotify.com/v1/me/player
+  (message (counsel-spotify-oauth2-query-response "" :type '(current-playback))))
+
+;;;###autoload
 (defun counsel-spotify-search-album ()
   "Bring Ivy frontend to choose and play an album."
   (interactive)
@@ -172,6 +179,7 @@
   (counsel-spotify-verify-credentials)
   (ivy-read "Search show: " (counsel-spotify-oauth2-search-by :type '(show)) :dynamic-collection t :action #'counsel-spotify-play-string))
 
+;;;###autoload
 (defun counsel-spotify-search-episode ()
   "Bring Ivy frontend to choose and play an (podcast) episode"
   (interactive)
