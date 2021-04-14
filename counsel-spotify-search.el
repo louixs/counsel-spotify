@@ -190,15 +190,15 @@
     (alist-get 'item)
     (alist-get 'name)))
 
-(defun counsel-spotify-oauth2-parse-current-playback (a-spotify-alist-response)
+(defun counsel-spotify-oauth2-format-current-playback (a-spotify-alist-response)
   (let* ((artist-name (get-artist-name a-spotify-alist-response))
          (track-name (get-track-name a-spotify-alist-response)))
-    (concat artist-name " - " track-name)))
+    (concat "Playing: " artist-name " - " track-name)))
 
 (defun counsel-spotify-oauth2-parse-response (a-spotify-alist-response category)
   (cond
    ((eq category 'user-playlist) (counsel-spotify-oauth2-parse-items a-spotify-alist-response category))
-   ((eq category 'current-playback) (counsel-spotify-oauth2-parse-current-playback a-spotify-alist-response))
+   ((eq category 'current-playback) (counsel-spotify-oauth2-format-current-playback a-spotify-alist-response))
    (t (counsel-spotify-parse-response a-spotify-alist-response))))
 
 (provide 'counsel-spotify-search)
