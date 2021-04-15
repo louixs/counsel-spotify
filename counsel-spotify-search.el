@@ -178,23 +178,30 @@
     (mapcar (lambda (item) (counsel-spotify-parse-spotify-object item a-type))
             items)))
 
+;; This is taken straight from the test file
+(defun as-utf8 (a-string)
+  (decode-coding-string (string-make-unibyte a-string) 'utf-8))
+
 (defun get-artist-name (response)
   (->> response
     (alist-get 'item)
     (alist-get 'artists)
-    (-map (lambda (artist) (alist-get 'name artist)))
-    (-reduce (lambda (acc it) (concat acc ", " it)))))
+    (-map (lambda (artist) (->> artist (alist-get 'name) as-utf8)))
+    (--reduce (concat acc ", " it))))
 
 (defun get-track-name (response)
   (->> response
     (alist-get 'item)
-    (alist-get 'name)))
+    (alist-get 'name)
+    as-utf8))
 
 (defun get-album-name (response)
+  (setq resp response)
   (->> response
     (alist-get 'item)
     (alist-get 'album)
-    (alist-get 'name)))
+    (alist-get 'name)
+    as-utf8))
 
 (defun counsel-spotify-oauth2-format-current-playback (a-spotify-alist-response)
   (let* ((artist-name (get-artist-name a-spotify-alist-response))
