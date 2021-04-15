@@ -183,17 +183,24 @@
     (alist-get 'item)
     (alist-get 'artists)
     (-map (lambda (artist) (alist-get 'name artist)))
-    (--reduce (concat acc " " it))))
+    (-reduce (lambda (acc it) (concat acc ", " it)))))
 
 (defun get-track-name (response)
   (->> response
     (alist-get 'item)
     (alist-get 'name)))
 
+(defun get-album-name (response)
+  (->> response
+    (alist-get 'item)
+    (alist-get 'album)
+    (alist-get 'name)))
+
 (defun counsel-spotify-oauth2-format-current-playback (a-spotify-alist-response)
   (let* ((artist-name (get-artist-name a-spotify-alist-response))
-         (track-name (get-track-name a-spotify-alist-response)))
-    (concat "Playing: " artist-name " - " track-name)))
+         (track-name (get-track-name a-spotify-alist-response))
+         (album-name (get-album-name a-spotify-alist-response)))
+    (concat track-name " - " artist-name " - " album-name " (Album)")))
 
 (defun counsel-spotify-oauth2-parse-response (a-spotify-alist-response category)
   (cond
