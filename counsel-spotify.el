@@ -31,6 +31,7 @@
 (require 'counsel-spotify-backends)
 (require 'counsel-spotify-notifications)
 (require 'counsel-spotify-messages)
+(require 'counsel-spotify-tracks)
 
 (defgroup  counsel-spotify nil
   "Customs for `counsel-spotify'"
@@ -185,6 +186,15 @@
   (interactive)
   (counsel-spotify-verify-credentials)
   (ivy-read "Search episode: " (counsel-spotify-oauth2-search-by :type '(episode)) :dynamic-collection t :action #'counsel-spotify-play-string))
+
+;;;###autoload
+(defun counsel-spotify-save-current-track ()
+  "Using player API to retrieve the currently playing track's ID.
+   By PUT:ting the retrieved ID to the tracks API, this saves the currently playing track to user's 'Your Music' library.
+   Basically same as clicking on the heart/like symbol by the tracks. The saved/liked track are stored in the Liked Songs playlist on Spotify."
+  (interactive)
+  (counsel-spotify--save-current-track-from-id
+   (counsel-spotify--get-current-track-id)))
 
 (provide 'counsel-spotify)
 ;;; counsel-spotify.el ends here
