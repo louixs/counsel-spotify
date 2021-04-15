@@ -40,7 +40,7 @@
   "Auth token data returned by oauth2-auth-and-store function from the oauth2 package."
   :type 'string :group 'counsel-spotify)
 
-(defcustom counsel-spotify-spotify-api-scopes "playlist-read-private playlist-read-collaborative user-read-private user-read-email user-read-currently-playing user-read-playback-state"
+(defcustom counsel-spotify-spotify-api-scopes "playlist-read-private playlist-read-collaborative user-read-private user-read-email user-read-currently-playing user-read-playback-state user-library-modify"
   "Variable to define spotify API scopes.
    If adding new feature you may need to add new scope.
    Here is the list of scopes: https://developer.spotify.com/documentation/general/guides/scopes/"
@@ -116,9 +116,9 @@
 
 ;; then retrieve
 ;; For example, user-data can be retrieved and stored as user-data like this
-(defun oauth2-query-results (token url)
+(defun oauth2-query-results (token url &optional request-method request-data)
   (with-current-buffer
-    (oauth2-url-retrieve-synchronously token url)
+    (oauth2-url-retrieve-synchronously token url request-method request-data)
     (goto-char url-http-end-of-headers)
     (json-read)))
 
