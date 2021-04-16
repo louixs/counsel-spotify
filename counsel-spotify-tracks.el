@@ -19,7 +19,7 @@
 ;;
 ;;; Code:
 (require 'dash)
-(require 'cousel-spotify-oauth)
+(require 'counsel-spotify-oauth)
 
 (defun counsel-spotify--get-current-track-id ()
   (let* ((url (concat counsel-spotify-spotify-api-url "/me/player"))
