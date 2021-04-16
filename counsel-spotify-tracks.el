@@ -1,15 +1,8 @@
 ;;; counsel-spotify-tracks.el --- Description -*- lexical-binding: t; -*-
 ;;
-;; Copyright (C) 2021 Ryuei Sasaki
 ;;
-;; Author: Ryuei Sasaki <https://github.com/george>
-;; Maintainer: Ryuei Sasaki <ryuei.sasaki@gmail.com>
+;; Author: Ryuei Sasaki <https://github.com/louixs>
 ;; Created: April 15, 2021
-;; Modified: April 15, 2021
-;; Version: 0.0.1
-;; Keywords: Symbol’s value as variable is void: finder-known-keywords
-;; Homepage: https://github.com/george/counsel-spotify-tracks
-;; Package-Requires: ((emacs "24.3"))
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
