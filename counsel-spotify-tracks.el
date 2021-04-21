@@ -17,7 +17,7 @@
 (defun counsel-spotify--get-current-track-id ()
   (let* ((url (concat counsel-spotify-spotify-api-url "/me/player"))
          (token (counsel-spotify-oauth-fetch-token))
-         (response (oauth2-query-results token url))
+         (response (oauth2-query-results-synchronously token url))
          (track (->> response (alist-get 'item)))
          (id (alist-get 'id track))
          (name (alist-get 'name track)))
@@ -33,7 +33,7 @@
          (url-request-extra-headers '(("Content-Type" . "application/json")
                                       ("Content-Length" . "0"))))
     (message "Adding " id " to the Liked Songs. ")
-    (oauth2-query-results token url "PUT" "")))
+    (oauth2-query-results-synchronously token url "PUT" "")))
 
 (provide 'counsel-spotify-tracks)
 ;;; counsel-spotify-tracks.el ends here

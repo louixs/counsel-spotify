@@ -115,19 +115,29 @@
 (defun get-last-element (l)
   (car (car (last l))))
 
-(cl-defun counsel-spotify-oauth2-query-response (&rest rest)
+(cl-defun counsel-spotify-oauth2-query-response-synchronously (&rest rest)
   (let* ((query-url (apply #'counsel-spotify-oauth2-make-query rest))
          (token (counsel-spotify-oauth-fetch-token))
-         (results (oauth2-query-results token query-url))
+         (results (oauth2-query-results-synchronously token query-url))
          (category (get-last-element rest)))
     (counsel-spotify-oauth2-parse-response results category)))
+
+(cl-defun counsel-spotify-oauth2-search-synchronously (a-callback &rest rest)
+  (let* ((query-url (apply #'counsel-spotify-oauth2-make-query rest))
+         (token (counsel-spotify-oauth-fetch-token))
+         (results (oauth2-query-results-synchronously token query-url))
+         (category (get-last-element rest)))
+    (funcall a-callback (counsel-spotify-oauth2-parse-response results category))))
 
 (cl-defun counsel-spotify-oauth2-search (a-callback &rest rest)
   (let* ((query-url (apply #'counsel-spotify-oauth2-make-query rest))
          (token (counsel-spotify-oauth-fetch-token))
-         (results (oauth2-query-results token query-url))
          (category (get-last-element rest)))
-    (funcall a-callback (counsel-spotify-oauth2-parse-response results category))))
+    (oauth2-query-results token
+                          query-url
+                          (lambda (results)
+                            (let ((parsed (counsel-spotify-oauth2-parse-response results category)))
+                              (funcall a-callback parsed))))))
 
 (cl-defgeneric counsel-spotify-parse-spotify-object (a-spotify-object type)
   "Parse A-SPOTIFY-OBJECT knowing it has the type TYPE.")
@@ -196,7 +206,6 @@
     as-utf8))
 
 (defun get-album-name (response)
-  (setq resp response)
   (->> response
     (alist-get 'item)
     (alist-get 'album)

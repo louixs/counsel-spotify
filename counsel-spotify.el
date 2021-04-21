@@ -80,7 +80,7 @@
 
 (defun counsel-spotify-update-ivy-candidates (list-of-counsel-spotify-objects)
   "Tell Ivy to update the minibuffer candidates with the LIST-OF-COUNSEL-SPOTIFY-OBJECTS."
- (ivy-update-candidates (mapcar #'counsel-spotify-format list-of-counsel-spotify-objects)))
+  (ivy-update-candidates (mapcar #'counsel-spotify-format list-of-counsel-spotify-objects)))
 
 (defmacro counsel-spotify-search-by (&rest search-args)
   "Create the function to search by SEARCH-KEYWORD and other SEARCH-ARGS."
@@ -90,15 +90,20 @@
 
 ;; oauth2
 (defmacro counsel-spotify-oauth2-search-by (&rest search-args)
-  "Create the function to search by SEARCH-KEYWORD and other SEARCH-ARGS."
   `(lambda (search-term)
      (counsel-spotify-oauth2-search #'counsel-spotify-update-ivy-candidates search-term ,@search-args)
      0))
 
-(defmacro counsel-spotify-oauth2-query-response-by (&rest search-args)
+(defmacro counsel-spotify-oauth2-search-synchronously-by (&rest search-args)
   "Create the function to search by SEARCH-KEYWORD and other SEARCH-ARGS."
   `(lambda (search-term)
-     (counsel-spotify-oauth2-query-response search-term ,@search-args)
+     (counsel-spotify-oauth2-search-synchronously #'counsel-spotify-update-ivy-candidates search-term ,@search-args)
+     0))
+
+(defmacro counsel-spotify-oauth2-query-response-synchronously-by (&rest search-args)
+  "Create the function to search by SEARCH-KEYWORD and other SEARCH-ARGS."
+  `(lambda (search-term)
+     (counsel-spotify-oauth2-query-response-synchronously search-term ,@search-args)
      0))
 
 ;;;###autoload
@@ -142,7 +147,7 @@
    "Search your user playlist: "
    (lambda (str pred code)
      (mapcar #'counsel-spotify-format
-             (counsel-spotify-oauth2-query-response "" :type '(user-playlist))))
+             (counsel-spotify-oauth2-query-response-synchronously "" :type '(user-playlist))))
    :action #'counsel-spotify-play-string))
 
 ;;;###autoload
@@ -150,7 +155,7 @@
   (interactive)
   (counsel-spotify-verify-credentials)
   ;; GET https://api.spotify.com/v1/me/player
-  (message (counsel-spotify-oauth2-query-response "" :type '(current-playback))))
+  (message (counsel-spotify-oauth2-query-response-synchronously "" :type '(current-playback))))
 
 ;;;###autoload
 (defun counsel-spotify-search-album ()
@@ -178,7 +183,7 @@
   "Bring Ivy frontend to choose and play a (podcast) show"
   (interactive)
   (counsel-spotify-verify-credentials)
-  (ivy-read "Search show: " (counsel-spotify-oauth2-search-by :type '(show)) :dynamic-collection t :action #'counsel-spotify-play-string))
+  (ivy-read "Search show: " (counsel-spotify-oauth2-search-synchronously-by :type '(show)) :dynamic-collection t :action #'counsel-spotify-play-string))
 
 ;;;###autoload
 (defun counsel-spotify-search-episode ()

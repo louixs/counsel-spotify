@@ -116,11 +116,21 @@
 
 ;; then retrieve
 ;; For example, user-data can be retrieved and stored as user-data like this
-(defun oauth2-query-results (token url &optional request-method request-data)
+(defun oauth2-query-results-synchronously (token url &optional request-method request-data)
   (with-current-buffer
     (oauth2-url-retrieve-synchronously token url request-method request-data)
     (goto-char url-http-end-of-headers)
     (json-read)))
+
+(defun oauth2-query-results (token url cb &optional request-method request-data)
+  (oauth2-url-retrieve token url
+                       (lambda (_status)
+                         (goto-char url-http-end-of-headers)
+                         (let ((results (json-read)))
+                           (funcall cb results)))
+                       nil
+                       request-method
+                       request-data))
 
 (provide 'counsel-spotify-oauth)
 ;;; counsel-spotify-oauth.el ends here
