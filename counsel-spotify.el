@@ -183,7 +183,7 @@
   "Bring Ivy frontend to choose and play a (podcast) show"
   (interactive)
   (counsel-spotify-verify-credentials)
-  (ivy-read "Search show: " (counsel-spotify-oauth2-search-synchronously-by :type '(show)) :dynamic-collection t :action #'counsel-spotify-play-string))
+  (ivy-read "Search show: " (counsel-spotify-oauth2-search-by :type '(show)) :dynamic-collection t :action #'counsel-spotify-play-string))
 
 ;;;###autoload
 (defun counsel-spotify-search-episode ()
