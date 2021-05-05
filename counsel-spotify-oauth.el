@@ -65,7 +65,9 @@
 (defun stop-redirect-server ()
   (print "Stopping web server...")
   (httpd-stop)
-  (kill-buffer "*httpd*"))
+  (when-let ((httpd-buffer (get-buffer "*httpd*")))
+    (print "Also killing the httpd buffer...")
+    (kill-buffer "*httpd*")))
 
 (defun counsel-spotify-oauth-fetch-token ()
   ""
