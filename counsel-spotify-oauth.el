@@ -106,7 +106,6 @@
 
   (oauth2-refresh-access counsel-spotify-spotify-api-auth-token))
 
-;; then retrieve
 ;; For example, user-data can be retrieved and stored as user-data like this
 (defun oauth2-query-results-synchronously (token url &optional request-method request-data)
   (with-current-buffer
