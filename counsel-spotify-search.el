@@ -98,7 +98,7 @@
   (let ((search-type (mapconcat #'symbol-name type ",")))
     (cond
      ((string-equal search-type "user-playlist") (concat counsel-spotify-spotify-api-url "/me/playlists?limit=50"))
-     ((string-equal search-type "current-playback") (concat counsel-spotify-spotify-api-url "/me/player"))
+     ((string-equal search-type "current-playback") (concat counsel-spotify-spotify-api-url "/me/player/currently-playing?additional_types=episode"))
      (t (format "%s/search?q=%s&type=%s"
                 counsel-spotify-spotify-api-url
                 (if filter (format "%s:%s" filter search-term) search-term)
@@ -193,6 +193,7 @@
   (decode-coding-string (string-make-unibyte a-string) 'utf-8))
 
 (defun get-artist-name (response)
+  (setq resp response)
   (->> response
     (alist-get 'item)
     (alist-get 'artists)
@@ -212,11 +213,36 @@
     (alist-get 'name)
     as-utf8))
 
-(defun counsel-spotify-oauth2-format-current-playback (a-spotify-alist-response)
+(defun counsel-spotify-oauth2-format-current-playback-track (a-spotify-alist-response)
   (let* ((artist-name (get-artist-name a-spotify-alist-response))
          (track-name (get-track-name a-spotify-alist-response))
          (album-name (get-album-name a-spotify-alist-response)))
     (concat track-name " - " artist-name " - " album-name " (Album)")))
+
+;; format episodes
+(defun get-episode-name (response)
+  (->> response
+      (alist-get 'item)
+      (alist-get 'name)))
+
+(defun get-show-name (response)
+  (->> response
+       (alist-get 'item)
+       (alist-get 'show)
+       (alist-get 'name)))
+
+(defun counsel-spotify-oauth2-format-current-playback-episode (a-spotify-alist-response)
+  (let* ((show-name (get-show-name a-spotify-alist-response))
+         (episode-name (get-episode-name a-spotify-alist-response)))
+    (concat show-name " - " episode-name)))
+
+
+(defun counsel-spotify-oauth2-format-current-playback (a-spotify-alist-response)
+  (let ((playing-type (alist-get 'currently_playing_type a-spotify-alist-response)))
+    (cond
+     ((string-equal "track" playing-type) (counsel-spotify-oauth2-format-current-playback-track a-spotify-alist-response))
+     ((string-equal "episode" playing-type) (counsel-spotify-oauth2-format-current-playback-episode a-spotify-alist-response))
+     (t "Unsupported playback type"))))
 
 (defun counsel-spotify-oauth2-parse-response (a-spotify-alist-response category)
   (cond
