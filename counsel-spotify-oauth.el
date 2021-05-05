@@ -113,13 +113,13 @@
    (counsel-spotify-oauth-fetch-token)))
 
 ;; For example, user-data can be retrieved and stored as user-data like this
-(defun oauth2-query-results-synchronously (token url &optional request-method request-data)
+(defun counsel-spotify-oauth2-query-results-synchronously (token url &optional request-method request-data)
   (with-current-buffer
     (oauth2-url-retrieve-synchronously token url request-method request-data)
     (goto-char url-http-end-of-headers)
     (json-read)))
 
-(defun oauth2-query-results (token url cb &optional request-method request-data)
+(defun counse-spotify-oauth2-query-results (token url cb &optional request-method request-data)
   (oauth2-url-retrieve token url
                        (lambda (_status)
                          (goto-char url-http-end-of-headers)

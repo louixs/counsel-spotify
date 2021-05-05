@@ -118,14 +118,14 @@
 (cl-defun counsel-spotify-oauth2-query-response-synchronously (&rest rest)
   (let* ((query-url (apply #'counsel-spotify-oauth2-make-query rest))
          (token (counsel-spotify-oauth-fetch-token))
-         (results (oauth2-query-results-synchronously token query-url))
+         (results (counsel-spotify-oauth2-query-results-synchronously token query-url))
          (category (get-last-element rest)))
     (counsel-spotify-oauth2-parse-response results category)))
 
 (cl-defun counsel-spotify-oauth2-search-synchronously (a-callback &rest rest)
   (let* ((query-url (apply #'counsel-spotify-oauth2-make-query rest))
          (token (counsel-spotify-oauth-fetch-token))
-         (results (oauth2-query-results-synchronously token query-url))
+         (results (counsel-spotify-oauth2-query-results-synchronously token query-url))
          (category (get-last-element rest)))
     (funcall a-callback (counsel-spotify-oauth2-parse-response results category))))
 
@@ -133,7 +133,7 @@
   (let* ((query-url (apply #'counsel-spotify-oauth2-make-query rest))
          (token (counsel-spotify-oauth-fetch-token))
          (category (get-last-element rest)))
-    (oauth2-query-results token
+    (counse-spotify-oauth2-query-results token
                           query-url
                           (lambda (results)
                             (let ((parsed (counsel-spotify-oauth2-parse-response results category)))
