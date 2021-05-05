@@ -83,7 +83,7 @@
     (stop-redirect-server))
   counsel-spotify-spotify-api-auth-token)
 
-(defun counsel-spotify-refresh-token ()
+(defun old--counsel-spotify-refresh-token ()
   (start-redirect-server)
   (setq
    counsel-spotify-spotify-api-code
@@ -105,6 +105,10 @@
      counsel-spotify-spotify-api-redirect-url))
 
   (oauth2-refresh-access counsel-spotify-spotify-api-auth-token))
+
+(defun counsel-spotify-refresh-token ()
+  (oauth2-refresh-access
+   (counsel-spotify-oauth-fetch-token)))
 
 ;; For example, user-data can be retrieved and stored as user-data like this
 (defun oauth2-query-results-synchronously (token url &optional request-method request-data)
