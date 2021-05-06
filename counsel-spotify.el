@@ -153,10 +153,10 @@
 
 ;;;###autoload
 (defun counsel-spotify-show-current-track ()
+  "Show information about currently playing track."
   (interactive)
   (counsel-spotify-verify-credentials)
-  ;; GET https://api.spotify.com/v1/me/player
-  (message (counsel-spotify-oauth2-query-response-synchronously "" :type '(current-playback))))
+  (counsel-spotify-oauth2-search (lambda (data) (message data)) "" :type '(current-playback)))
 
 ;;;###autoload
 (defun counsel-spotify-search-album ()
