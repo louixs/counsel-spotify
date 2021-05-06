@@ -143,10 +143,6 @@
   ;; by suppliyng offset to get the remaining playlists
   ;; also because we get the list and this is not a search
   ;; we don't need to call the API everytime we enter the search-term
-  ;; (ivy-read "Search user playlist: "
-  ;;           (counsel-spotify-oauth2-search-by :type '(user-playlist))
-  ;;           :dynamic-collection t
-  ;;           :action #'counsel-spotify-play-string)
   (counsel-spotify-oauth2-search
    (lambda (data)
      (ivy-read "Search user playlist: "
