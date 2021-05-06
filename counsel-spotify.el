@@ -143,12 +143,17 @@
   ;; by suppliyng offset to get the remaining playlists
   ;; also because we get the list and this is not a search
   ;; we don't need to call the API everytime we enter the search-term
-  (ivy-read
-   "Search your user playlist: "
-   (lambda (str pred code)
-     (mapcar #'counsel-spotify-format
-             (counsel-spotify-oauth2-query-response-synchronously "" :type '(user-playlist))))
-   :action #'counsel-spotify-play-string))
+  ;; (ivy-read "Search user playlist: "
+  ;;           (counsel-spotify-oauth2-search-by :type '(user-playlist))
+  ;;           :dynamic-collection t
+  ;;           :action #'counsel-spotify-play-string)
+  (counsel-spotify-oauth2-search
+   (lambda (data)
+     (ivy-read "Search user playlist: "
+               (mapcar #'counsel-spotify-format data)
+               :action #'counsel-spotify-play-string))
+   ""
+   :type '(user-playlist)))
 
 ;;;###autoload
 (defun counsel-spotify-show-current-track ()
