@@ -109,6 +109,7 @@
   (oauth2-refresh-access counsel-spotify-spotify-api-auth-token))
 
 (defun counsel-spotify-refresh-token ()
+  (interactive)
   (oauth2-refresh-access
    (counsel-spotify-oauth-fetch-token)))
 
