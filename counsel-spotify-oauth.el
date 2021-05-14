@@ -108,12 +108,12 @@
 
   (oauth2-refresh-access counsel-spotify-spotify-api-auth-token))
 
-(defun counsel-spotify-refresh-token ()
+(defun counsel-spotify-refresh-oauth-token ()
   (interactive)
   (oauth2-refresh-access
    (counsel-spotify-oauth-fetch-token)))
 
-(defun counsel-spotify-reset-token ()
+(defun counsel-spotify-reset-oauth-token ()
   "Lets you re-do the authentication and re-fetch auth code from Spotify API in case
    something goes awry. It assumes that you haven't changed the default place where oauth2.plstore
    is placed."
