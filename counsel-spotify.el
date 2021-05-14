@@ -79,6 +79,12 @@
   (interactive)
   (counsel-spotify-tell-backend-to-toggle counsel-spotify-current-backend #'toggle-repeat))
 
+;;;###autoload
+(defun counsel-spotify-toggle-shuffle ()
+  "Toggle shuffle"
+  (interactive)
+  (counsel-spotify-tell-backend-to-toggle counsel-spotify-current-backend #'toggle-shuffle))
+
 ;;;;;;;;;;;;;;;;;;;
 ;; Ivy interface ;;
 ;;;;;;;;;;;;;;;;;;;

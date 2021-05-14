@@ -44,7 +44,8 @@ Some clients, such as mopidy, can run as system services."
    (next-command :initarg :next :initform "" :reader next)
    (previous-command :initarg :previous :initform "" :reader previous)
    (setrepeat-command :initarg :setrepeat :initform "" :reader setrepeat)
-   (toggle-repeat-command :initarg :toggle-repeat :initform "" :reader toggle-repeat)))
+   (toggle-repeat-command :initarg :toggle-repeat :initform "" :reader toggle-repeat)
+   (toggle-shuffle-command :initarg :toggle-shuffle :initform "" :reader toggle-shuffle)))
 
 (defclass counsel-spotify-backend ()
   ((commands :initarg :commands :reader commands)))
@@ -56,7 +57,8 @@ Some clients, such as mopidy, can run as system services."
                                       :next "next track"
                                       :previous "previous track"
                                       :setrepeat "set repeating to true"
-                                      :toggle-repeat "repeating"))))
+                                      :toggle-repeat "repeating"
+                                      :toggle-shuffle "shuffling"))))
 
 (defclass counsel-spotify-linux-backend (counsel-spotify-backend)
   ((commands :initform (make-instance 'counsel-spotify-backend-commands
@@ -66,6 +68,7 @@ Some clients, such as mopidy, can run as system services."
                                       :previous "Previous"
                                       :setrepeat "Repeat"
                                       :toggle-repeat "repeating"
+                                      :toggle-shuffle "shuffling"
                                       ))))
 
 (defvar counsel-spotify-current-backend
