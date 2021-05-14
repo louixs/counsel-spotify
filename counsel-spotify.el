@@ -68,12 +68,6 @@
   (counsel-spotify-tell-backend-to counsel-spotify-current-backend #'next))
 
 ;;;###autoload
-(defun counsel-spotify-repeat ()
-  "Set repeat"
-  (interactive)
-  (counsel-spotify-tell-backend-to counsel-spotify-current-backend #'setrepeat))
-
-;;;###autoload
 (defun counsel-spotify-toggle-repeat ()
   "Toggle repeat"
   (interactive)

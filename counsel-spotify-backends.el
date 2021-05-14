@@ -43,7 +43,6 @@ Some clients, such as mopidy, can run as system services."
    (playpause-command :initarg :playpause :initform "" :reader playpause)
    (next-command :initarg :next :initform "" :reader next)
    (previous-command :initarg :previous :initform "" :reader previous)
-   (setrepeat-command :initarg :setrepeat :initform "" :reader setrepeat)
    (toggle-repeat-command :initarg :toggle-repeat :initform "" :reader toggle-repeat)
    (toggle-shuffle-command :initarg :toggle-shuffle :initform "" :reader toggle-shuffle)))
 
@@ -56,7 +55,6 @@ Some clients, such as mopidy, can run as system services."
                                       :playpause "playpause"
                                       :next "next track"
                                       :previous "previous track"
-                                      :setrepeat "set repeating to true"
                                       :toggle-repeat "repeating"
                                       :toggle-shuffle "shuffling"))))
 
@@ -66,10 +64,8 @@ Some clients, such as mopidy, can run as system services."
                                       :playpause "PlayPause"
                                       :next "Next"
                                       :previous "Previous"
-                                      :setrepeat "Repeat"
                                       :toggle-repeat "repeating"
-                                      :toggle-shuffle "shuffling"
-                                      ))))
+                                      :toggle-shuffle "shuffling"))))
 
 (defvar counsel-spotify-current-backend
   (pcase system-type
@@ -108,12 +104,6 @@ Some clients, such as mopidy, can run as system services."
      (counsel-spotify-tell-spotify-to (concat "set " CMD " to false"))
      (counsel-spotify-tell-spotify-to (concat "set " CMD " to true")))))
 
-(defun counsel-spotify-toggle-shuffle ()
-  (counsel-spotify-tell-spotify-to-toggle "shuffling"))
-
-(defun counsel-spotify-toggle-repeat ()
-  (counsel-spotify-tell-spotify-to-toggle "repeating"))
-
 (cl-defgeneric counsel-spotify-tell-backend-to-toggle (backend action)
   "Tell the given BACKEND to execute the given ACTION to toggle.")
 
@@ -126,7 +116,6 @@ Some clients, such as mopidy, can run as system services."
   "Tell Linux BACKEND to execute the given ACTION to toggle."
   ;; (counsel-spotify-call-spotify-via-dbus (funcall action (commands backend)))
   )
-
 
 (cl-defgeneric counsel-spotify-tell-backend-to (backend action)
   "Tell the given BACKEND to execute the given ACTION.")
