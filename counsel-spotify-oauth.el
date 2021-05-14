@@ -120,7 +120,7 @@
   (interactive)
   (delete-file (concat user-emacs-directory "oauth2.plstore"))
   (setq counsel-spotify-spotify-api-auth-token nil)
-  (counsel-spotify-refresh-token))
+  (counsel-spotify-refresh-oauth-token))
 
 ;; For example, user-data can be retrieved and stored as user-data like this
 (defun counsel-spotify-oauth2-query-results-synchronously (token url &optional request-method request-data)
