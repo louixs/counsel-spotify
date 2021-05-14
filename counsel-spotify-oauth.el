@@ -113,6 +113,15 @@
   (oauth2-refresh-access
    (counsel-spotify-oauth-fetch-token)))
 
+(defun counsel-spotify-reset-token ()
+  "Lets you re-do the authentication and re-fetch auth code from Spotify API in case
+   something goes awry. It assumes that you haven't changed the default place where oauth2.plstore
+   is placed."
+  (interactive)
+  (delete-file (concat user-emacs-directory "oauth2.plstore"))
+  (setq counsel-spotify-spotify-api-auth-token nil)
+  (counsel-spotify-refresh-token))
+
 ;; For example, user-data can be retrieved and stored as user-data like this
 (defun counsel-spotify-oauth2-query-results-synchronously (token url &optional request-method request-data)
   (with-current-buffer
