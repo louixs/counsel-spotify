@@ -73,6 +73,11 @@
   (interactive)
   (counsel-spotify-tell-backend-to counsel-spotify-current-backend #'setrepeat))
 
+;;;###autoload
+(defun counsel-spotify-toggle-repeat ()
+  "Toggle repeat"
+  (interactive)
+  (counsel-spotify-tell-backend-to-toggle counsel-spotify-current-backend #'toggle-repeat))
 
 ;;;;;;;;;;;;;;;;;;;
 ;; Ivy interface ;;

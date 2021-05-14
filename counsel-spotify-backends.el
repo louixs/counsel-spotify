@@ -43,7 +43,8 @@ Some clients, such as mopidy, can run as system services."
    (playpause-command :initarg :playpause :initform "" :reader playpause)
    (next-command :initarg :next :initform "" :reader next)
    (previous-command :initarg :previous :initform "" :reader previous)
-   (setrepeat-command :initarg :setrepeat :initform "" :reader setrepeat)))
+   (setrepeat-command :initarg :setrepeat :initform "" :reader setrepeat)
+   (toggle-repeat-command :initarg :toggle-repeat :initform "" :reader toggle-repeat)))
 
 (defclass counsel-spotify-backend ()
   ((commands :initarg :commands :reader commands)))
@@ -54,7 +55,8 @@ Some clients, such as mopidy, can run as system services."
                                       :playpause "playpause"
                                       :next "next track"
                                       :previous "previous track"
-                                      :setrepeat "set repeating to true"))))
+                                      :setrepeat "set repeating to true"
+                                      :toggle-repeat "repeating"))))
 
 (defclass counsel-spotify-linux-backend (counsel-spotify-backend)
   ((commands :initform (make-instance 'counsel-spotify-backend-commands
@@ -63,6 +65,7 @@ Some clients, such as mopidy, can run as system services."
                                       :next "Next"
                                       :previous "Previous"
                                       :setrepeat "Repeat"
+                                      :toggle-repeat "repeating"
                                       ))))
 
 (defvar counsel-spotify-current-backend
@@ -83,6 +86,44 @@ Some clients, such as mopidy, can run as system services."
 (defun counsel-spotify-tell-spotify-to (cmd)
   (let ((osascript-str (concat "osascript -e 'tell application \"Spotify\" to " cmd "'")))
     (shell-command osascript-str)))
+
+;; need refactoring though
+;; prototyping the idea
+(defun str-true? (s)
+  (if (string-equal s "true")
+   t
+   nil))
+
+(defun counsel-spotify-tell-spotify-to-string (CMD)
+  (string-trim
+   (shell-command-to-string
+    (concat "osascript -e 'tell application \"Spotify\" to " CMD "'"))))
+
+(defun counsel-spotify-tell-spotify-to-toggle (CMD)
+  (let ((on? (str-true? (counsel-spotify-tell-spotify-to-string CMD))))
+    (if on?
+     (counsel-spotify-tell-spotify-to (concat "set " CMD " to false"))
+     (counsel-spotify-tell-spotify-to (concat "set " CMD " to true")))))
+
+(defun counsel-spotify-toggle-shuffle ()
+  (counsel-spotify-tell-spotify-to-toggle "shuffling"))
+
+(defun counsel-spotify-toggle-repeat ()
+  (counsel-spotify-tell-spotify-to-toggle "repeating"))
+
+(cl-defgeneric counsel-spotify-tell-backend-to-toggle (backend action)
+  "Tell the given BACKEND to execute the given ACTION to toggle.")
+
+(cl-defmethod counsel-spotify-tell-backend-to-toggle ((backend counsel-spotify-darwin-backend) action)
+  "Tell Darwin BACKEND to execute the given ACTION to toggle."
+  (counsel-spotify-tell-spotify-to-toggle (funcall action (commands backend)))
+  (shell-command (concat "osascript -e 'tell application \"Spotify\" to '" (shell-quote-argument (funcall action (commands backend))))))
+
+(cl-defmethod counsel-spotify-tell-backend-to-toggle ((backend counsel-spotify-linux-backend) action)
+  "Tell Linux BACKEND to execute the given ACTION to toggle."
+  ;; (counsel-spotify-call-spotify-via-dbus (funcall action (commands backend)))
+  )
+
 
 (cl-defgeneric counsel-spotify-tell-backend-to (backend action)
   "Tell the given BACKEND to execute the given ACTION.")
@@ -113,19 +154,6 @@ Some clients, such as mopidy, can run as system services."
 (defun counsel-spotify-play-string (spotify-object-as-string)
   "Call play on an the spotify object held as a property of the SPOTIFY-OBJECT-AS-STRING."
   (counsel-spotify-do-play counsel-spotify-current-backend (counsel-spotify-unwrap-spotify-object spotify-object-as-string)))
-
-
-;; need refactoring though
-;; prototyping the idea
-(defun repeat? ()
-  (-> (shell-command-to-string (concat "osascript -e 'tell application \"Spotify\" to '" "repeating"))
-    (string-trim)))
-
-(defun toggle-repeat ()
-  (if (string-equal (repeat?) "true")
-      (shell-command (concat "osascript -e 'tell application \"Spotify\" to " "set repeating to false" " '"))
-    (shell-command (concat "osascript -e 'tell application \"Spotify\" to " "set repeating to true" " '"))))
-
 
 (provide 'counsel-spotify-backends)
 ;;; counsel-spotify-backends.el ends here
