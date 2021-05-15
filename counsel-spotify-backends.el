@@ -99,9 +99,9 @@ Some clients, such as mopidy, can run as system services."
     (concat "osascript -e 'tell application \"Spotify\" to " CMD "'"))))
 
 (defun counsel-spotify-tell-spotify-to-toggle (CMD)
-  (let ((on? (str-true? (counsel-spotify-tell-spotify-to-string CMD))
+  (let ((on? (str-true? (counsel-spotify-tell-spotify-to-string CMD)))
         (set-false-cmd (concat "set " CMD " to false"))
-        (set-true-cmd (concat "set " CMD " to true"))))
+        (set-true-cmd (concat "set " CMD " to true")))
     (if on?
         (progn
           (counsel-spotify-tell-spotify-to set-false-cmd)
