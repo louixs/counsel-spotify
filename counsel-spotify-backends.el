@@ -99,18 +99,23 @@ Some clients, such as mopidy, can run as system services."
     (concat "osascript -e 'tell application \"Spotify\" to " CMD "'"))))
 
 (defun counsel-spotify-tell-spotify-to-toggle (CMD)
-  (let ((on? (str-true? (counsel-spotify-tell-spotify-to-string CMD))))
+  (let ((on? (str-true? (counsel-spotify-tell-spotify-to-string CMD))
+        (set-false-cmd (concat "set " CMD " to false"))
+        (set-true-cmd (concat "set " CMD " to true"))))
     (if on?
-     (counsel-spotify-tell-spotify-to (concat "set " CMD " to false"))
-     (counsel-spotify-tell-spotify-to (concat "set " CMD " to true")))))
+        (progn
+          (counsel-spotify-tell-spotify-to set-false-cmd)
+          (message set-false-cmd))
+        (progn
+          (counsel-spotify-tell-spotify-to set-true-cmd)
+          (message set-true-cmd)))))
 
 (cl-defgeneric counsel-spotify-tell-backend-to-toggle (backend action)
   "Tell the given BACKEND to execute the given ACTION to toggle.")
 
 (cl-defmethod counsel-spotify-tell-backend-to-toggle ((backend counsel-spotify-darwin-backend) action)
   "Tell Darwin BACKEND to execute the given ACTION to toggle."
-  (counsel-spotify-tell-spotify-to-toggle (funcall action (commands backend)))
-  (shell-command (concat "osascript -e 'tell application \"Spotify\" to '" (shell-quote-argument (funcall action (commands backend))))))
+  (counsel-spotify-tell-spotify-to-toggle (funcall action (commands backend))))
 
 (cl-defmethod counsel-spotify-tell-backend-to-toggle ((backend counsel-spotify-linux-backend) action)
   "Tell Linux BACKEND to execute the given ACTION to toggle."
