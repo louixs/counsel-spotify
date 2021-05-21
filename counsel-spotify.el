@@ -157,8 +157,22 @@
                :type '(user-playlist)))
             :action #'counsel-spotify-play-string))
 
+;;;###autoload
+(defun counsel-spotify-new-releases ()
+  "Show new releases"
+  (interactive)
+  (counsel-spotify-verify-credentials)
+  (ivy-read "Search new releases: "
+            (lambda (str pred _)
+              (counsel-spotify-oauth2-search-synchronously
+               (lambda (data)
+                 (setq d data)
+                 (mapcar #'counsel-spotify-format data))
+               ""
+               :type '(new-releases)))
+            :action #'counsel-spotify-play-string))
 
-;;;###playlist
+;;;###autoload
 (defun counsel-spotify-show-current-track ()
   "Show information about currently playing track."
   (interactive)

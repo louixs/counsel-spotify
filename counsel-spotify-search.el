@@ -34,6 +34,10 @@
 ;;   "Variable to define spotify API url for getting the access token."
 ;;   :type 'string :group 'counsel-spotify)
 
+(defcustom counsel-spotify-new-releases-country "GB"
+  "Specify country for new releases in ISO 3166-1 alpha-2 country code."
+  :type 'string :group 'counsel-spotify)
+
 (defcustom counsel-spotify-client-id ""
   "Spotify application client ID."
   :type 'string :group 'counsel-spotify)
@@ -99,6 +103,7 @@
     (cond
      ((string-equal search-type "user-playlist") (concat counsel-spotify-spotify-api-url "/me/playlists?limit=50"))
      ((string-equal search-type "current-playback") (concat counsel-spotify-spotify-api-url "/me/player/currently-playing?additional_types=episode"))
+     ((string-equal search-type "new-releases") (concat counsel-spotify-spotify-api-url (concat "/browse/new-releases/?country=" counsel-spotify-new-releases-country)))
      (t (format "%s/search?q=%s&type=%s"
                 counsel-spotify-spotify-api-url
                 (if filter (format "%s:%s" filter search-term) search-term)
@@ -112,6 +117,13 @@
         (funcall a-callback (counsel-spotify-parse-response results))))))
 
 ;; oauth2
+(defun counsel-spotify-oauth2-parse-response (a-spotify-alist-response category)
+  (cond
+   ((eq category 'user-playlist) (counsel-spotify-oauth2-parse-items a-spotify-alist-response category))
+   ((eq category 'current-playback) (counsel-spotify-oauth2-parse-items a-spotify-alist-response category))
+   ((eq category 'new-releases) (counsel-spotify-oauth2-parse-new-releases a-spotify-alist-response))
+   (t (counsel-spotify-parse-response a-spotify-alist-response))))
+
 (defun get-last-element (l)
   (car (car (last l))))
 
@@ -184,22 +196,20 @@
    a-spotify-alist-response))
 
 ;; oauth2
-(defun counsel-spotify-oauth2-parse-items (a-spotify-alist-response a-type)
-  (let ((items (alist-get 'items a-spotify-alist-response)))
-    (mapcar (lambda (item) (counsel-spotify-parse-spotify-object item a-type))
-            items)))
-
 ;; This is taken straight from the test file
 (defun as-utf8 (a-string)
   (decode-coding-string (string-make-unibyte a-string) 'utf-8))
 
+(defun format-artists-name (artists)
+  (->> artists
+       (-map (lambda (artist) (->> artist (alist-get 'name) as-utf8)))
+       (--reduce (concat acc ", " it))))
+
 (defun get-artist-name (response)
-  (setq resp response)
   (->> response
     (alist-get 'item)
     (alist-get 'artists)
-    (-map (lambda (artist) (->> artist (alist-get 'name) as-utf8)))
-    (--reduce (concat acc ", " it))))
+    format-artists-name))
 
 (defun get-track-name (response)
   (->> response
@@ -213,6 +223,8 @@
     (alist-get 'album)
     (alist-get 'name)
     as-utf8))
+
+
 
 (defun counsel-spotify-oauth2-format-current-playback-track (a-spotify-alist-response)
   (let* ((artist-name (get-artist-name a-spotify-alist-response))
@@ -237,6 +249,13 @@
          (episode-name (get-episode-name a-spotify-alist-response)))
     (concat show-name " - " episode-name)))
 
+(defun counsel-spotify-oauth2-parse-items (a-spotify-alist-response a-type)
+  (let ((items (alist-get 'items a-spotify-alist-response)))
+    (mapcar (lambda (item) (counsel-spotify-parse-spotify-object item a-type))
+            items)))
+
+(defun counsel-spotify-oauth2-parse-new-releases (response)
+  (counsel-spotify-oauth2-parse-items (alist-get 'albums response) 'album))
 
 (defun counsel-spotify-oauth2-format-current-playback (a-spotify-alist-response)
   (let ((playing-type (alist-get 'currently_playing_type a-spotify-alist-response)))
@@ -244,12 +263,6 @@
      ((string-equal "track" playing-type) (counsel-spotify-oauth2-format-current-playback-track a-spotify-alist-response))
      ((string-equal "episode" playing-type) (counsel-spotify-oauth2-format-current-playback-episode a-spotify-alist-response))
      (t "Unsupported playback type"))))
-
-(defun counsel-spotify-oauth2-parse-response (a-spotify-alist-response category)
-  (cond
-   ((eq category 'user-playlist) (counsel-spotify-oauth2-parse-items a-spotify-alist-response category))
-   ((eq category 'current-playback) (counsel-spotify-oauth2-format-current-playback a-spotify-alist-response))
-   (t (counsel-spotify-parse-response a-spotify-alist-response))))
 
 (provide 'counsel-spotify-search)
 ;;; counsel-spotify-search.el ends here
