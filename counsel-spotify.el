@@ -148,7 +148,6 @@
   ;; by suppliyng offset to get the remaining playlists
   ;; also because we get the list and this is not a search
   ;; we don't need to call the API everytime we enter the search-term
-
   (ivy-read "Search user playlist: "
             (lambda (str pred _)
               (counsel-spotify-oauth2-search-synchronously
