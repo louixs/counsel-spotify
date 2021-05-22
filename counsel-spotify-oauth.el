@@ -9,7 +9,7 @@
 ;; Version: 0.0.1
 ;; Keywords: Symbol’s value as variable is void: finder-known-keywords
 ;; Homepage: https://github.com/george/counsel-spotify-oauth
-;; Package-Requires: ((emacs "24.3") (oauth2 "0.16") (simple-httpd "1.5.1"))
+;; Package-Requires: ((emacs "24.3") (oauth2 "0.16") (simple-httpd "1.5.1") (aio "1.0"))
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
@@ -22,6 +22,7 @@
 (require 'oauth2)
 (require 'json)
 (require 'simple-httpd)
+(require 'aio)
 
 ;; Moved from counsel-spotify-search
 (defcustom counsel-spotify-spotify-api-authentication-url "https://accounts.spotify.com/api/token"
@@ -138,6 +139,23 @@
                        nil
                        request-method
                        request-data))
+
+(defun counsel-spotify-promisified-oauth2-url-retrieve (token url &optional request-method request-data)
+  (let ((promise (aio-promise)))
+    (prog1 promise
+      (condition-case error
+          (oauth2-url-retrieve token url
+                               (lambda (status)
+                                 (goto-char url-http-end-of-headers)
+                                 (let ((results (json-read)))
+                                   (aio-resolve promise (lambda () results))))
+                               nil
+                               request-method
+                               request-data)
+        (error (aio-resolve promise
+                            (lambda ()
+                              (signal (car error) (cdr error)))))))))
+
 
 (provide 'counsel-spotify-oauth)
 ;;; counsel-spotify-oauth.el ends here

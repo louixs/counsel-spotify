@@ -152,6 +152,16 @@
        (let ((parsed (counsel-spotify-oauth2-parse-response results category)))
          (funcall a-callback parsed))))))
 
+(aio-defun counsel-spotify-oauth2-search-p (&rest rest)
+  (let* ((query-url (apply #'counsel-spotify-oauth2-make-query rest))
+         (token (counsel-spotify-oauth-fetch-token))
+         (category (get-last-element rest))
+         (result (aio-await
+                  (counsel-spotify-promisified-oauth2-url-retrieve
+                   token
+                   query-url))))
+    (counsel-spotify-oauth2-parse-response result category)))
+
 (cl-defgeneric counsel-spotify-parse-spotify-object (a-spotify-object type)
   "Parse A-SPOTIFY-OBJECT knowing it has the type TYPE.")
 
