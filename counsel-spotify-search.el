@@ -145,7 +145,7 @@
   (let* ((query-url (apply #'counsel-spotify-oauth2-make-query rest))
          (token (counsel-spotify-oauth-fetch-token))
          (category (get-last-element rest)))
-    (counse-spotify-oauth2-query-results
+    (counsel-spotify-oauth2-query-results
      token
      query-url
      (lambda (results)

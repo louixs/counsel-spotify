@@ -129,7 +129,7 @@
     (goto-char url-http-end-of-headers)
     (json-read)))
 
-(defun counse-spotify-oauth2-query-results (token url cb &optional request-method request-data)
+(defun counsel-spotify-oauth2-query-results (token url cb &optional request-method request-data)
   (oauth2-url-retrieve token url
                        (lambda (_status)
                          (goto-char url-http-end-of-headers)
