@@ -171,8 +171,17 @@
   "Show user's top artists"
   (interactive)
   (counsel-spotify-verify-credentials)
-  (ivy-read "Top artists"
+  (ivy-read "Top artists: "
             (counsel-spotify-oauth2-fetch-by-type '(top-artists))
+            :action #'counsel-spotify-play-string))
+
+;;;###autoload
+(defun counsel-spotify-top-tracks ()
+  "Show user's top tracks"
+  (interactive)
+  (counsel-spotify-verify-credentials)
+  (ivy-read "Top tracks: "
+            (counsel-spotify-oauth2-fetch-by-type '(top-tracks))
             :action #'counsel-spotify-play-string))
 
 ;;;###autoload

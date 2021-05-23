@@ -209,6 +209,7 @@
      ((string-equal search-type "current-playback") (concat counsel-spotify-spotify-api-url "/me/player/currently-playing?additional_types=episode"))
      ((string-equal search-type "new-releases") (concat counsel-spotify-spotify-api-url (concat "/browse/new-releases/?country=" counsel-spotify-new-releases-country)))
      ((string-equal search-type "top-artists") (concat counsel-spotify-spotify-api-url "/me/top/artists"))
+     ((string-equal search-type "top-tracks") (concat counsel-spotify-spotify-api-url "/me/top/tracks"))
      (t (format "%s/search?q=%s&type=%s"
                 counsel-spotify-spotify-api-url
                 (if filter (format "%s:%s" filter search-term) search-term)
@@ -228,6 +229,7 @@
    ((eq category 'current-playback) (counsel-spotify-oauth2-format-current-playback a-spotify-alist-response))
    ((eq category 'new-releases) (counsel-spotify-oauth2-parse-new-releases a-spotify-alist-response))
    ((eq category 'top-artists) (counsel-spotify-oauth2-parse-items a-spotify-alist-response 'artists))
+   ((eq category 'top-tracks) (counsel-spotify-oauth2-parse-items a-spotify-alist-response 'tracks))
    (t (counsel-spotify-parse-response a-spotify-alist-response))))
 
 (defun get-last-element (l)
