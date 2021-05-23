@@ -33,7 +33,7 @@
   "Variable to define spotify API url for getting an access token and a refresh token."
   :type 'string :group 'counsel-spotify)
 
-(defcustom counsel-spotify-spotify-api-redirect-url "http://localhost:8080"
+(defcustom counsel-spotify-spotify-api-redirect-url "http://localhost:8080/counsel-spotify-oauth"
   "Variable to define redirect url for retrieving auth token."
   :type 'string :group 'counsel-spotify)
 
@@ -54,11 +54,48 @@
   (httpd-start))
 
 (defun stop-redirect-server ()
-  (print "Stopping web server...")
+  (message "Stopping web server...")
   (httpd-stop)
   (when-let ((httpd-buffer (get-buffer "*httpd*")))
-    (print "Also killing the httpd buffer...")
+    (message "Also killing the httpd buffer...")
     (kill-buffer "*httpd*")))
+
+(defun counsel-spotify-oauth2-request-p (auth-url client-id &optional redirect-uri scope state)
+  "Promisified auth request.
+
+   Use it like this:
+  (aio-defun fetch ()
+   (let* ((res (aio-await
+                (counsel-spotify-oauth2-request-p counsel-spotify-spotify-api-authorization-url
+                                                  counsel-spotify-client-id
+                                                  counsel-spotify-spotify-api-redirect-url
+                                                  counsel-spotify-spotify-api-scopes))))
+    (message \"resutlt: %s\" res)))
+
+   ;; If outside of aio-defun, you can use this to wait for the result to return
+   (aio-await-for (fetch))
+   "
+  (start-redirect-server)
+  (let ((promise (aio-promise)))
+    (prog1 promise
+      (defservlet* counsel-spotify-oauth text/html (code)
+        (when code
+          (insert "<p> Connected. Return to emacs</p> <script type='text/javascript'>setTimeout(function() {close()}, 1500);</script>")
+          (message "stopping the server")
+          (stop-redirect-server)
+          (aio-resolve promise
+                       (lambda ()
+                         code))))
+
+      (browse-url (concat auth-url
+                          (if (string-match-p "\?" auth-url) "&" "?")
+                          "client_id=" (url-hexify-string client-id)
+                          "&response_type=code"
+                          "&redirect_uri=" (url-hexify-string (or redirect-uri "urn:ietf:wg:oauth:2.0:oob"))
+                          (if scope (concat "&scope=" (url-hexify-string scope)) "")
+                          (if state (concat "&state=" (url-hexify-string state)) ""))))))
+
+
 
 (defun counsel-spotify-oauth-fetch-token ()
   ""
