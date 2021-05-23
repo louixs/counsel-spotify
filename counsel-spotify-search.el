@@ -226,7 +226,7 @@
 (defun counsel-spotify-oauth2-parse-response (a-spotify-alist-response category)
   (cond
    ((eq category 'user-playlist) (counsel-spotify-oauth2-parse-items a-spotify-alist-response category))
-   ((eq category 'current-playback) (counsel-spotify-oauth2-format-current-playback a-spotify-alist-response))
+   ((eq category 'current-playback) (counsel-spotify-oauth2-format-current-playback-track a-spotify-alist-response))
    ((eq category 'new-releases) (counsel-spotify-oauth2-parse-new-releases a-spotify-alist-response))
    ((eq category 'top-artists) (counsel-spotify-oauth2-parse-items a-spotify-alist-response 'artists))
    ((eq category 'top-tracks) (counsel-spotify-oauth2-parse-items a-spotify-alist-response 'tracks))
