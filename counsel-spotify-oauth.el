@@ -47,16 +47,6 @@
    Here is the list of scopes: https://developer.spotify.com/documentation/general/guides/scopes/"
   :type 'string :group 'counsel-spotify)
 
-;; use counsel-spotify-spotify-api-authentication-url as the token-url
-
-;; these variablesx are set in my init for testing purpuses
-;; counsel-spotify-client-id
-;; counsel-spotify-client-secret
-;;
-
-;; oauth2's entry point is oauth2-auth-and-store
-;; call this to obtain and store toke nad refresh token
-
 ;; http server
 (defun start-redirect-server ()
   (setq httpd-root "www/"
