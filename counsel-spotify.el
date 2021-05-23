@@ -167,6 +167,15 @@
             :action #'counsel-spotify-play-string))
 
 ;;;###autoload
+(defun counsel-spotify-top-artists ()
+  "Show user's top artists"
+  (interactive)
+  (counsel-spotify-verify-credentials)
+  (ivy-read "Top artists"
+            (counsel-spotify-oauth2-fetch-by-type '(top-artists))
+            :action #'counsel-spotify-play-string))
+
+;;;###autoload
 (defun counsel-spotify-show-current-track ()
   "Show information about currently playing track."
   (interactive)

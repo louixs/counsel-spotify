@@ -41,7 +41,7 @@
   "Auth token data returned by oauth2-auth-and-store function from the oauth2 package."
   :type 'string :group 'counsel-spotify)
 
-(defcustom counsel-spotify-spotify-api-scopes "playlist-read-private playlist-read-collaborative user-read-private user-read-email user-read-currently-playing user-read-playback-state user-library-modify"
+(defcustom counsel-spotify-spotify-api-scopes "playlist-read-private playlist-read-collaborative user-read-private user-read-email user-read-currently-playing user-read-playback-state user-library-modify user-top-read"
   "Variable to define spotify API scopes.
    If adding new feature you may need to add new scope.
    Here is the list of scopes: https://developer.spotify.com/documentation/general/guides/scopes/"
@@ -155,7 +155,6 @@
         (error (aio-resolve promise
                             (lambda ()
                               (signal (car error) (cdr error)))))))))
-
 
 (provide 'counsel-spotify-oauth)
 ;;; counsel-spotify-oauth.el ends here
