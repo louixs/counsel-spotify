@@ -99,10 +99,9 @@
      (counsel-spotify-oauth2-search #'counsel-spotify-update-ivy-candidates search-term ,@search-args)
      0))
 
-(defun counsel-spotify-oauth2-fetch-by-type (type)
+(aio-defun counsel-spotify-oauth2-fetch-by-type (type)
   (mapcar #'counsel-spotify-format
-          (aio-wait-for
-           (counsel-spotify-oauth2-search-p "" :type type))))
+          (aio-await (counsel-spotify-oauth2-search-p "" :type type))))
 
 (defmacro counsel-spotify-oauth2-search-synchronously-by (&rest search-args)
   "Create the function to search by SEARCH-KEYWORD and other SEARCH-ARGS."
@@ -143,7 +142,7 @@
   (ivy-read "Search playlist: " (counsel-spotify-search-by :type '(playlist)) :dynamic-collection t :action #'counsel-spotify-play-string))
 
 ;;;###autoload
-(defun counsel-spotify-search-user-playlist ()
+(aio-defun counsel-spotify-search-user-playlist ()
   "Bring Ivy frontend to choose and play a playlist from your current user.
    dynamic-collection is not turned on as the spotify API returns a list of playlist.
    There is no search API that dynamically updates the result."
@@ -154,8 +153,9 @@
   ;; also because we get the list and this is not a search
   ;; we don't need to call the API everytime we enter the search-term
   (ivy-read "Search user playlist: "
-            (counsel-spotify-oauth2-fetch-by-type '(user-playlist))
+            (aio-await (counsel-spotify-oauth2-fetch-by-type '(user-playlist)))
             :action #'counsel-spotify-play-string))
+
 
 ;;;###autoload
 (defun counsel-spotify-new-releases ()
