@@ -61,7 +61,7 @@
     (kill-buffer "*httpd*")))
 
 (defun counsel-spotify-oauth2-request-p (auth-url client-id &optional redirect-uri scope state)
-  "Promisified auth request.
+  "Promisified auth request. The implementaiton is largely based on aio-url-retrieve.
 
    Use it like this:
   (aio-defun fetch ()
@@ -94,6 +94,8 @@
                           "&redirect_uri=" (url-hexify-string (or redirect-uri "urn:ietf:wg:oauth:2.0:oob"))
                           (if scope (concat "&scope=" (url-hexify-string scope)) "")
                           (if state (concat "&state=" (url-hexify-string state)) ""))))))
+
+
 
 
 
