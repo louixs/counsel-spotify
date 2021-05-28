@@ -143,7 +143,7 @@
   (ivy-read "Search playlist: " (counsel-spotify-search-by :type '(playlist)) :dynamic-collection t :action #'counsel-spotify-play-string))
 
 ;;;###autoload
-(aio-defun counsel-spotify-search-user-playlist ()
+(defun counsel-spotify-search-user-playlist ()
   "Bring Ivy frontend to choose and play a playlist from your current user.
    dynamic-collection is not turned on as the spotify API returns a list of playlist.
    There is no search API that dynamically updates the result."
@@ -153,9 +153,14 @@
   ;; by suppliyng offset to get the remaining playlists
   ;; also because we get the list and this is not a search
   ;; we don't need to call the API everytime we enter the search-term
-  (ivy-read "Search user playlist: "
-            (aio-await (counsel-spotify-oauth2-fetch-by-type '(user-playlist)))
-            :action #'counsel-spotify-play-string))
+
+  ;; also aio-defun couldn't be autoloaded so that's why I'm using aio-lambda
+  (funcall
+   (aio-lambda ()
+     (ivy-read "Search user playlist: "
+               (aio-await (counsel-spotify-oauth2-fetch-by-type '(user-playlist)))
+               :action #'counsel-spotify-play-string))))
+
 
 
 ;;;###autoload
