@@ -161,8 +161,6 @@
                (aio-await (counsel-spotify-oauth2-fetch-by-type '(user-playlist)))
                :action #'counsel-spotify-play-string))))
 
-
-
 ;;;###autoload
 (defun counsel-spotify-new-releases ()
   "Show new releases"
