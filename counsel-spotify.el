@@ -159,7 +159,9 @@
    (aio-lambda ()
      (ivy-read "Search user playlist: "
                (aio-await (counsel-spotify-oauth2-fetch-by-type '(user-playlist)))
-               :action #'counsel-spotify-play-string))))
+               :action #'counsel-spotify-play-string
+               :caller "" ;; If this is nil caller will be C-X-Counsel which will pollute the minibuffer results if ivy-rich-mode is on
+               ))))
 
 ;;;###autoload
 (defun counsel-spotify-new-releases ()
