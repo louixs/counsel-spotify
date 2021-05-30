@@ -142,6 +142,19 @@
   (counsel-spotify-verify-credentials)
   (ivy-read "Search playlist: " (counsel-spotify-search-by :type '(playlist)) :dynamic-collection t :action #'counsel-spotify-play-string))
 
+(defmacro counsel-spotify-async-fetch-read-by-type (prompt type)
+  "Asynchronously fetch from spotify api and feed the results into ivy read.
+   Use this for APIs that give you static result i.e. most of the APIs other than search.
+   We want to avoid synchronous operations using aio-wait-for or url-retrive-synchronous because it can lock up emacs
+   randomly resulting in a lot of frustrations."
+  `(funcall
+    (aio-lambda ()
+      (ivy-read ,prompt
+                (aio-await (counsel-spotify-oauth2-fetch-by-type ,type))
+                :action #'counsel-spotify-play-string
+                :caller "" ;; If this is nil caller will be C-X-Counsel which will pollute the minibuffer results if ivy-rich-mode is on
+                ))))
+
 ;;;###autoload
 (defun counsel-spotify-search-user-playlist ()
   "Bring Ivy frontend to choose and play a playlist from your current user.
@@ -153,42 +166,32 @@
   ;; by suppliyng offset to get the remaining playlists
   ;; also because we get the list and this is not a search
   ;; we don't need to call the API everytime we enter the search-term
-
-  ;; also aio-defun couldn't be autoloaded so that's why I'm using aio-lambda
-  (funcall
-   (aio-lambda ()
-     (ivy-read "Search user playlist: "
-               (aio-await (counsel-spotify-oauth2-fetch-by-type '(user-playlist)))
-               :action #'counsel-spotify-play-string
-               :caller "" ;; If this is nil caller will be C-X-Counsel which will pollute the minibuffer results if ivy-rich-mode is on
-               ))))
+  (counsel-spotify-async-fetch-read-by-type "Search user playlist: "
+                                            '(user-playlist)))
 
 ;;;###autoload
 (defun counsel-spotify-new-releases ()
   "Show new releases"
   (interactive)
   (counsel-spotify-verify-credentials)
-  (ivy-read "Search new releases: "
-            (counsel-spotify-oauth2-fetch-by-type '(new-releases))
-            :action #'counsel-spotify-play-string))
+  (counsel-spotify-async-fetch-read-by-type "Search new releases: "
+                                            '(new-releases)))
 
 ;;;###autoload
 (defun counsel-spotify-top-artists ()
   "Show user's top artists"
   (interactive)
   (counsel-spotify-verify-credentials)
-  (ivy-read "Top artists: "
-            (counsel-spotify-oauth2-fetch-by-type '(top-artists))
-            :action #'counsel-spotify-play-string))
+  (counsel-spotify-async-fetch-read-by-type "Top artists: "
+                                            '(top-artists)))
 
 ;;;###autoload
 (defun counsel-spotify-top-tracks ()
   "Show user's top tracks"
   (interactive)
   (counsel-spotify-verify-credentials)
-  (ivy-read "Top tracks: "
-            (counsel-spotify-oauth2-fetch-by-type '(top-tracks))
-            :action #'counsel-spotify-play-string))
+  (counsel-spotify-async-fetch-read-by-type "Top tracks: "
+                                            '(top-tracks)))
 
 ;;;###autoload
 (defun counsel-spotify-show-current-track ()
