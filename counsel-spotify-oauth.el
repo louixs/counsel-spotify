@@ -60,7 +60,7 @@
     (message "Also killing the httpd buffer...")
     (kill-buffer "*httpd*")))
 
-(defun counsel-spotify-oauth2-request-p (auth-url client-id &optional redirect-uri scope state)
+(defun counsel-spotify-oauth2-request-authorization-p (auth-url client-id &optional redirect-uri scope state)
   "Promisified auth request. The implementaiton is largely based on aio-url-retrieve.
 
    Use it like this:
@@ -95,9 +95,15 @@
                           (if scope (concat "&scope=" (url-hexify-string scope)) "")
                           (if state (concat "&state=" (url-hexify-string state)) ""))))))
 
-
-
-
+(aio-defun counsel-spotify-oauth2-auth (auth-url token-url client-id client-secret &optional scope state redirect-uri)
+  (let ((auth-code (aio-await  (counsel-spotify-oauth2-request-authorization-p
+                                auth-url client-id redirect-uri scope state))))
+    (oauth2-request-access
+     token-url
+     client-id
+     client-secret
+     auth-code
+     redirect-uri)))
 
 (defun counsel-spotify-oauth-fetch-token ()
   ""
@@ -151,13 +157,6 @@
   (delete-file (concat user-emacs-directory "oauth2.plstore"))
   (setq counsel-spotify-spotify-api-auth-token nil)
   (counsel-spotify-refresh-oauth-token))
-
-;; For example, user-data can be retrieved and stored as user-data like this
-(defun counsel-spotify-oauth2-query-results-synchronously (token url &optional request-method request-data)
-  (with-current-buffer
-    (oauth2-url-retrieve-synchronously token url request-method request-data)
-    (goto-char url-http-end-of-headers)
-    (json-read)))
 
 (defun counsel-spotify-oauth2-query-results (token url cb &optional request-method request-data)
   (oauth2-url-retrieve token url
