@@ -104,18 +104,6 @@
   (mapcar #'counsel-spotify-format
           (aio-await (counsel-spotify-oauth2-search-p "" :type type))))
 
-(defmacro counsel-spotify-oauth2-search-synchronously-by (&rest search-args)
-  "Create the function to search by SEARCH-KEYWORD and other SEARCH-ARGS."
-  `(lambda (search-term)
-     (counsel-spotify-oauth2-search-synchronously #'counsel-spotify-update-ivy-candidates search-term ,@search-args)
-     0))
-
-(defmacro counsel-spotify-oauth2-query-response-synchronously-by (&rest search-args)
-  "Create the function to search by SEARCH-KEYWORD and other SEARCH-ARGS."
-  `(lambda (search-term)
-     (counsel-spotify-oauth2-query-response-synchronously search-term ,@search-args)
-     0))
-
 ;;;###autoload
 (defun counsel-spotify-search-track ()
   "Bring Ivy frontend to choose and play a track."
@@ -241,8 +229,11 @@
    By PUT:ting the retrieved ID to the tracks API, this saves the currently playing track to user's 'Your Music' library.
    Basically same as clicking on the heart/like symbol by the tracks. The saved/liked track are stored in the Liked Songs playlist on Spotify."
   (interactive)
-  (counsel-spotify--save-current-track-from-id
-   (counsel-spotify--get-current-track-id)))
+  (funcall
+   (aio-lambda ()
+     (let ((id (aio-await (counsel-spotify--get-current-track-id-p))))
+       (counsel-spotify--save-current-track-from-id-p id)
+       (message "Added")))))
 
 (provide 'counsel-spotify)
 ;;; counsel-spotify.el ends here
