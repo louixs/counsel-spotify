@@ -188,17 +188,21 @@
 
 (aio-defun counsel-spotify-refresh-oauth-token ()
   (interactive)
+  (message "Refreshing oauth token.")
   (oauth2-refresh-access
-   (aio-await (counsel-spotify-oauth-fetch-token-p))))
+   (aio-await (counsel-spotify-oauth-fetch-token-p)))
+  (message "Finished refreshing oauth token."))
 
 (defun counsel-spotify-reset-oauth-token ()
   "Lets you re-do the authentication and re-fetch auth code from Spotify API in case
    something goes awry. It assumes that you haven't changed the default place where oauth2.plstore
    is placed."
   (interactive)
+  (message "Resetting oauth token")
   (delete-file (concat user-emacs-directory "oauth2.plstore"))
   (setq counsel-spotify-spotify-api-auth-token nil)
-  (counsel-spotify-refresh-oauth-token))
+  (counsel-spotify-refresh-oauth-token)
+  (message "Finished resetting token"))
 
 (defun counsel-spotify-oauth2-query-results (token url cb &optional request-method request-data)
   (oauth2-url-retrieve token url
