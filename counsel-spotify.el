@@ -96,8 +96,9 @@
 
 ;; oauth2
 (defmacro counsel-spotify-oauth2-search-by (&rest search-args)
-  `(lambda (search-term)
-     (counsel-spotify-oauth2-search #'counsel-spotify-update-ivy-candidates search-term ,@search-args)
+  `(aio-lambda (search-term)
+     (let ((result (aio-await (counsel-spotify-oauth2-search-p search-term ,@search-args))))
+       (counsel-spotify-update-ivy-candidates result))
      0))
 
 (aio-defun counsel-spotify-oauth2-fetch-by-type (type)
@@ -186,7 +187,10 @@
   "Show information about currently playing track."
   (interactive)
   (counsel-spotify-verify-credentials)
-  (counsel-spotify-oauth2-search (lambda (data) (message data)) "" :type '(current-playback)))
+  (funcall
+   (aio-lambda ()
+     (let ((data (aio-await (counsel-spotify-oauth2-search-p "" :type '(current-playback)))))
+       (message data)))))
 
 ;;;###autoload
 (defun counsel-spotify-search-album ()

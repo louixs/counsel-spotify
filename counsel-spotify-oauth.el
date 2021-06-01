@@ -95,7 +95,7 @@
                           (if scope (concat "&scope=" (url-hexify-string scope)) "")
                           (if state (concat "&state=" (url-hexify-string state)) ""))))))
 
-(aio-defun counsel-spotify-oauth2-auth (auth-url token-url client-id client-secret &optional scope state redirect-uri)
+(aio-defun counsel-spotify-oauth2-auth-p (auth-url token-url client-id client-secret &optional scope state redirect-uri)
   (let ((auth-code (aio-await  (counsel-spotify-oauth2-request-authorization-p
                                 auth-url client-id redirect-uri scope state))))
     (oauth2-request-access
@@ -104,6 +104,48 @@
      client-secret
      auth-code
      redirect-uri)))
+
+;; temporal
+(aio-defun counsel-spotify-oauth2-auth-and-store-p (auth-url token-url scope client-id client-secret &optional redirect-uri state)
+  "Request access to a resource and store it using `plstore'."
+  ;; We store a MD5 sum of all URL
+  (let* ((plstore (plstore-open oauth2-token-file))
+         (id (oauth2-compute-id auth-url token-url scope))
+         (plist (cdr (plstore-get plstore id))))
+    ;; Check if we found something matching this access
+    (if plist
+        ;; We did, return the token object
+        (make-oauth2-token :plstore plstore
+                           :plstore-id id
+                           :client-id client-id
+                           :client-secret client-secret
+                           :access-token (plist-get plist :access-token)
+                           :refresh-token (plist-get plist :refresh-token)
+                           :token-url token-url
+                           :access-response (plist-get plist :access-response))
+      (let ((token (aio-await (counsel-spotify-oauth2-auth auth-url token-url
+                                                           client-id client-secret scope state redirect-uri))))
+        ;; Set the plstore
+        (setf (oauth2-token-plstore token) plstore)
+        (setf (oauth2-token-plstore-id token) id)
+        (plstore-put plstore id nil `(:access-token
+                                      ,(oauth2-token-access-token token)
+                                      :refresh-token
+                                      ,(oauth2-token-refresh-token token)
+                                      :access-response
+                                      ,(oauth2-token-access-response token)))
+        (plstore-save plstore)
+        token))))
+
+(aio-defun counsel-spotify-oauth-fetch-token-p ()
+  (let ((token (aio-await (counsel-spotify-oauth2-auth-and-store-p counsel-spotify-spotify-api-authorization-url
+                                                                   counsel-spotify-spotify-api-authentication-url
+                                                                   counsel-spotify-spotify-api-scopes
+                                                                   counsel-spotify-client-id
+                                                                   counsel-spotify-client-secret
+                                                                   counsel-spotify-spotify-api-redirect-url))))
+    (setq counsel-spotify-spotify-api-auth-token token)
+    token))
 
 (defun counsel-spotify-oauth-fetch-token ()
   ""
@@ -144,10 +186,10 @@
 
   (oauth2-refresh-access counsel-spotify-spotify-api-auth-token))
 
-(defun counsel-spotify-refresh-oauth-token ()
+(aio-defun counsel-spotify-refresh-oauth-token ()
   (interactive)
   (oauth2-refresh-access
-   (counsel-spotify-oauth-fetch-token)))
+   (aio-await (counsel-spotify-oauth-fetch-token-p))))
 
 (defun counsel-spotify-reset-oauth-token ()
   "Lets you re-do the authentication and re-fetch auth code from Spotify API in case

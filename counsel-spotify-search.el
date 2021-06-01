@@ -248,7 +248,7 @@
 
 (aio-defun counsel-spotify-oauth2-search-p (&rest rest)
   (let* ((query-url (apply #'counsel-spotify-oauth2-make-query rest))
-         (token (counsel-spotify-oauth-fetch-token))
+         (token (aio-await (counsel-spotify-oauth-fetch-token-p)))
          (category (get-last-element rest))
          (result (aio-await
                   (counsel-spotify-promisified-oauth2-url-retrieve
