@@ -96,8 +96,7 @@
                           (if state (concat "&state=" (url-hexify-string state)) ""))))))
 
 (aio-defun counsel-spotify-oauth2-auth-p (auth-url token-url client-id client-secret &optional scope state redirect-uri)
-  (let ((auth-code (aio-await  (counsel-spotify-oauth2-request-authorization-p
-                                auth-url client-id redirect-uri scope state))))
+  (let ((auth-code (aio-await (counsel-spotify-oauth2-request-authorization-p auth-url client-id redirect-uri scope state))))
     (oauth2-request-access
      token-url
      client-id
@@ -123,8 +122,8 @@
                            :refresh-token (plist-get plist :refresh-token)
                            :token-url token-url
                            :access-response (plist-get plist :access-response))
-      (let ((token (aio-await (counsel-spotify-oauth2-auth auth-url token-url
-                                                           client-id client-secret scope state redirect-uri))))
+      (let ((token (aio-await (counsel-spotify-oauth2-auth-p auth-url token-url
+                                                             client-id client-secret scope state redirect-uri))))
         ;; Set the plstore
         (setf (oauth2-token-plstore token) plstore)
         (setf (oauth2-token-plstore-id token) id)
@@ -146,6 +145,160 @@
                                                                    counsel-spotify-spotify-api-redirect-url))))
     (setq counsel-spotify-spotify-api-auth-token token)
     token))
+
+;; PKCE
+;; Proof Key for Code Exchange (PKCE)
+;; Pick the the character length for the random string
+(defun counsel-spotify-oauth--random-char-length (start end)
+  (let* ((allowed-char-lengths  (number-sequence start end))
+         (allowed-char-lenghts-count (length allowed-char-lengths))
+         (ind (% (random) allowed-char-lenghts-count)))
+    (nth ind allowed-char-lengths)))
+
+(defun counsel-spotify-oauth--pkce-random-char-length ()
+  (counsel-spotify-oauth--random-char-length 43 128))
+
+;; Construct a random string of random length chosen above
+;; it can contain letters, digits, understcores, periods hyphens, or tildes
+(defun counsel-spotify-oauth--get-random-char ()
+  (let* ((allowed-chars "abcdefghijklmnopqrstuvwxyz1234567890_.-~")
+         (allowed-chars-length (length allowed-chars))
+         (ind (% (abs (random)) allowed-chars-length)))
+    (substring allowed-chars ind (+ ind 1))))
+
+(defun counsel-spotify-oauth--concat-random-str-times (times)
+  (if (< times 1)
+    ""
+    (concat (counsel-spotify-oauth--get-random-char) (counsel-spotify-oauth--concat-random-str-times (- times 1)))))
+
+(defun counsel-spotify-oauth--generate-code-verifier ()
+  (counsel-spotify-oauth--concat-random-str-times (counsel-spotify-oauth--pkce-random-char-length)))
+
+(defun counsel-spotify-oauth--generate-code-challenge (code-verifier)
+  (secure-hash 'sha256 code-verifier))
+
+(defun counsel-spotify-oauth2--request-pkce-authorization-p (auth-url client-id code-verifier redirect-uri &optional scope state)
+  "Promisified auth request. The implementaiton is largely based on aio-url-retrieve.
+
+   Use it like this:
+  (aio-defun fetch ()
+   (let* ((res (aio-await
+                (counsel-spotify-oauth2-request-p counsel-spotify-spotify-api-authorization-url
+                                                  counsel-spotify-client-id
+                                                  counsel-spotify-spotify-api-redirect-url
+                                                  counsel-spotify-spotify-api-scopes))))
+    (message \"resutlt: %s\" res)))
+
+   ;; If outside of aio-defun, you can use this to wait for the result to return
+   (aio-await-for (fetch))
+   "
+  (start-redirect-server)
+  (let ((promise (aio-promise)))
+    (prog1 promise
+      (defservlet* counsel-spotify-oauth text/html (code)
+        (when code
+          (insert "<p> Connected. Return to emacs</p> <script type='text/javascript'>setTimeout(function() {close()}, 1500);</script>")
+          (message "stopping the server")
+          (stop-redirect-server)
+          (aio-resolve promise
+                       (lambda ()
+                         code))))
+
+      (browse-url (concat auth-url
+                          (if (string-match-p "\?" auth-url) "&" "?")
+                          "client_id=" (url-hexify-string client-id)
+                          "&response_type=code"
+                          "&redirect_uri=" (url-hexify-string (or redirect-uri "urn:ietf:wg:oauth:2.0:oob"))
+                          "&code_challenge_method=S256"
+                          (concat "&code_challenge=" (url-hexify-string (counsel-spotify-oauth--generate-code-challenge code-verifier)))
+                          (if scope (concat "&scope=" (url-hexify-string scope)) "")
+                          (if state (concat "&state=" (url-hexify-string state)) ""))))))
+
+(defun counsel-spotify-oauth2--request-access-pkce (token-url client-id code code-verifier &optional redirect-uri)
+  ""
+  (when code
+    (let ((result (oauth2-make-access-request
+                   token-url
+                   (concat
+                    "client_id=" client-id
+                    "&code=" code
+                    "&redirect_uri=" (url-hexify-string (or redirect-uri "urn:ietf:wg:oauth:2.0:oob"))
+                    "&grant_type=authorization_code"
+                    (concat "&code_verifier=" (url-hexify-string code-verifier))))))
+      (make-oauth2-token :client-id client-id
+                         :access-token (cdr (assoc 'access_token result))
+                         :refresh-token (cdr (assoc 'refresh_token result))
+                         :token-url token-url
+                         :access-response result))))
+
+(aio-defun counsel-spotify-oauth2--auth-pkce-p (auth-url token-url client-id &optional scope state redirect-uri)
+  (let* ((code-verifier (counsel-spotify-oauth--generate-code-verifier))
+         (auth-code (aio-await (counsel-spotify-oauth2--request-pkce-authorization-p auth-url client-id code-verifier redirect-uri scope state))))
+    (counsel-spotify-oauth2--request-access-pkce
+     token-url
+     client-id
+     auth-code
+     code-verifier
+     redirect-uri)))
+
+;; temporal
+(aio-defun counsel-spotify-oauth2-auth-and-store-pkce-p (auth-url token-url scope client-id &optional redirect-uri state)
+  "Request access to a resource and store it using `plstore'."
+  ;; We store a MD5 sum of all URL
+  (let* ((plstore (plstore-open oauth2-token-file))
+         (id (oauth2-compute-id auth-url token-url scope))
+         (plist (cdr (plstore-get plstore id))))
+    ;; Check if we found something matching this access
+    (if plist
+        ;; We did, return the token object
+        (make-oauth2-token :plstore plstore
+                           :plstore-id id
+                           :client-id client-id
+                           :access-token (plist-get plist :access-token)
+                           :refresh-token (plist-get plist :refresh-token)
+                           :token-url token-url
+                           :access-response (plist-get plist :access-response))
+      (let ((token (aio-await (counsel-spotify-oauth2--auth-pkce-p auth-url token-url client-id scope state redirect-uri))))
+        ;; Set the plstore
+        (setf (oauth2-token-plstore token) plstore)
+        (setf (oauth2-token-plstore-id token) id)
+        (plstore-put plstore id nil `(:access-token
+                                      ,(oauth2-token-access-token token)
+                                      :refresh-token
+                                      ,(oauth2-token-refresh-token token)
+                                      :access-response
+                                      ,(oauth2-token-access-response token)))
+        (plstore-save plstore)
+        token))))
+
+(aio-defun counsel-spotify-oauth-fetch-token-pkce-p ()
+  (let ((token (aio-await (counsel-spotify-oauth2-auth-and-store-pkce-p counsel-spotify-spotify-api-authorization-url
+                                                                        counsel-spotify-spotify-api-authentication-url
+                                                                        counsel-spotify-spotify-api-scopes
+                                                                        counsel-spotify-client-id
+                                                                        counsel-spotify-spotify-api-redirect-url))))
+    (setq counsel-spotify-spotify-api-auth-token token)
+    token))
+
+(aio-defun counsel-spotify-refresh-oauth-token-pkce ()
+  (interactive)
+  (message "Refreshing oauth token.")
+  (let ((token (aio-await (counsel-spotify-oauth-fetch-token-pkce-p))))
+    (oauth2-refresh-access token))
+  (message "Finished refreshing oauth token."))
+
+(defun counsel-spotify-reset-oauth-token-pkce ()
+  "Lets you re-do the authentication and re-fetch auth code from Spotify API in case
+   something goes awry. It assumes that you haven't changed the default place where oauth2.plstore
+   is placed."
+  (interactive)
+  (message "Resetting oauth token")
+  (delete-file (concat user-emacs-directory "oauth2.plstore"))
+  (setq counsel-spotify-spotify-api-auth-token nil)
+  (counsel-spotify-refresh-oauth-token)
+  (message "Finished resetting token"))
+
+;;;;
 
 (defun counsel-spotify-oauth-fetch-token ()
   ""
@@ -189,8 +342,9 @@
 (aio-defun counsel-spotify-refresh-oauth-token ()
   (interactive)
   (message "Refreshing oauth token.")
-  (oauth2-refresh-access
-   (aio-await (counsel-spotify-oauth-fetch-token-p)))
+  (let ((token (aio-await (counsel-spotify-oauth-fetch-token-p))))
+    (setq rs/refresh-oauth-token token)
+    (oauth2-refresh-access token))
   (message "Finished refreshing oauth token."))
 
 (defun counsel-spotify-reset-oauth-token ()
@@ -214,21 +368,22 @@
                        request-method
                        request-data))
 
-(defun counsel-spotify-promisified-oauth2-url-retrieve (token url &optional request-method request-data)
+(defun counsel-spotify-oauth2-url-retrieve-p (token url &optional request-method request-data)
   (let ((promise (aio-promise)))
     (prog1 promise
       (condition-case error
-          (oauth2-url-retrieve token url
-                               (lambda (status)
-                                 (goto-char url-http-end-of-headers)
-                                 (let ((results (json-read)))
-                                   (aio-resolve promise (lambda () results))))
-                               nil
-                               request-method
-                               request-data)
-        (error (aio-resolve promise
-                            (lambda ()
-                              (signal (car error) (cdr error)))))))))
+       (oauth2-url-retrieve token url
+                            (lambda (status)
+                              (goto-char url-http-end-of-headers)
+                              (let ((results (json-read)))
+                                (aio-resolve promise (lambda () results))))
+                            nil
+                            request-method
+                            request-data)
+       (error (aio-resolve promise
+                           (lambda ()
+                             (signal (car error) (cdr error)))))))))
+
 
 (provide 'counsel-spotify-oauth)
 ;;; counsel-spotify-oauth.el ends here

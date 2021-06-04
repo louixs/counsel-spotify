@@ -17,7 +17,7 @@
 (aio-defun counsel-spotify--get-current-track-id-p ()
   (let* ((url (concat counsel-spotify-spotify-api-url "/me/player"))
          (token (counsel-spotify-oauth-fetch-token))
-         (response (aio-await (counsel-spotify-promisified-oauth2-url-retrieve token url)))
+         (response (aio-await (counsel-spotify-oauth2-url-retrieve-p token url)))
          (track (->> response (alist-get 'item)))
          (id (alist-get 'id track))
          (name (alist-get 'name track)))
@@ -32,7 +32,7 @@
          (token (counsel-spotify-oauth-fetch-token))
          (url-request-extra-headers '(("Content-Type" . "application/json")
                                       ("Content-Length" . "0")))
-         (result (aio-await (counsel-spotify-promisified-oauth2-url-retrieve token url "PUT" ""))))
+         (result (aio-await (counsel-spotify-oauth2-url-retrieve-p token url "PUT" ""))))
     (message "Reuslt: %s" result)
     (message "%s added to the Liked Songs." id)))
 
