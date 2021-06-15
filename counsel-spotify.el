@@ -55,7 +55,6 @@
   (interactive)
   (counsel-spotify-tell-backend-to counsel-spotify-current-backend #'playpause))
 
-
 ;;;###autoload
 (defun counsel-spotify-previous ()
   "Start playing previous song."
@@ -95,11 +94,12 @@
      0))
 
 ;; oauth2
-(defmacro counsel-spotify-oauth2-search-by (&rest search-args)
-  `(aio-lambda (search-term)
-     (let ((result (aio-await (counsel-spotify-oauth2-search-p search-term ,@search-args))))
-       (counsel-spotify-update-ivy-candidates result))
-     0))
+(defmacro counsel-spotify-oauth2-search-by (search-term &rest search-args)
+  `(funcall
+    (aio-lambda ()
+      (let ((result (aio-await (counsel-spotify-oauth2-search-p ,search-term ,@search-args))))
+        (setq rs/result result)
+        (counsel-spotify-update-ivy-candidates result)))))
 
 (aio-defun counsel-spotify-oauth2-fetch-by-type (type)
   (mapcar #'counsel-spotify-format
@@ -218,14 +218,20 @@
   "Bring Ivy frontend to choose and play a (podcast) show"
   (interactive)
   (counsel-spotify-verify-credentials)
-  (ivy-read "Search show: " (counsel-spotify-oauth2-search-by :type '(show)) :dynamic-collection t :action #'counsel-spotify-play-string))
+  (ivy-read
+   "Search show: "
+   (counsel-spotify-oauth2-search-by :type '(show))
+   :dynamic-collection t
+   :action #'counsel-spotify-play-string))
 
 ;;;###autoload
 (defun counsel-spotify-search-episode ()
   "Bring Ivy frontend to choose and play an (podcast) episode"
   (interactive)
   (counsel-spotify-verify-credentials)
-  (ivy-read "Search episode: " (counsel-spotify-oauth2-search-by :type '(episode)) :dynamic-collection t :action #'counsel-spotify-play-string))
+  (ivy-read
+   "Search episode: "
+   (counsel-spotify-oauth2-search-by :type '(episode)) :dynamic-collection t :action #'counsel-spotify-play-string))
 
 ;;;###autoload
 (defun counsel-spotify-save-current-track ()
