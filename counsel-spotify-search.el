@@ -67,6 +67,8 @@
    (album :initarg :album :initform "" :reader album)
    (duration-in-ms :initarg :duration :initform 0 :reader duration-in-ms)))
 
+(defclass counsel-spotify-show (counsel-spotify-playable)
+  ((publisher :initarg :publisher :initform "" :reader publisher)))
 
 (cl-defgeneric counsel-spotify-parse-spotify-object (a-spotify-object type)
   "Parse A-SPOTIFY-OBJECT knowing it has the type TYPE.")
@@ -83,6 +85,13 @@
         (artist-name (alist-get 'name (elt (alist-get 'artists a-spotify-album-object) 0)))
         (uri (alist-get 'uri a-spotify-album-object)))
     (make-instance 'counsel-spotify-album :name name :uri uri :artist-name artist-name)))
+
+(cl-defmethod counsel-spotify-parse-spotify-object (a-spotify-show-object (_type (eql shows)))
+  "Parse A-SPOTIFY-SHOW-OBJECT of _TYPE show."
+  (let ((name (alist-get 'name a-spotify-show-object))
+        (publisher (alist-get 'publisher a-spotify-show-object))
+        (uri (alist-get 'uri a-spotify-show-object)))
+    (make-instance 'counsel-spotify-show :name name :uri uri :publisher publisher)))
 
 (cl-defmethod counsel-spotify-parse-spotify-object (a-spotify-track-object (_type (eql tracks)))
   "Parse A-SPOTIFY-TRACK-OBJECT of _TYPE track."
@@ -163,9 +172,14 @@
          (episode-name (get-episode-name a-spotify-alist-response)))
     (concat show-name " - " episode-name)))
 
+(defun counsel-spotify-oauth2-parse-shows (a-spotify-alist-response a-type)
+  (let ((response (alist-get a-type a-spotify-alist-response)))
+    (counsel-spotify-oauth2-parse-items response a-type)))
+
 (defun counsel-spotify-oauth2-parse-items (a-spotify-alist-response a-type)
   (let ((items (alist-get 'items a-spotify-alist-response)))
-    (mapcar (lambda (item) (counsel-spotify-parse-spotify-object item a-type))
+    (mapcar (lambda (item)
+              (counsel-spotify-parse-spotify-object item a-type))
             items)))
 
 (defun counsel-spotify-oauth2-parse-new-releases (response)
@@ -193,7 +207,7 @@
                        ,@body)))))
 
 (cl-defun counsel-spotify-make-query (search-term &key type filter)
-  "Make a Spotify query to search for TERM of type TYPE with a FILTER."
+  "Make a Spotify query to search counsel-spotify-parse-itemsfor TERM of type TYPE with a FILTER."
   (when (null type) (error "Must supply a type of object to search for"))
   (format "%s/search?q=%s&type=%s"
           counsel-spotify-spotify-api-url
@@ -230,6 +244,7 @@
    ((eq category 'new-releases) (counsel-spotify-oauth2-parse-new-releases a-spotify-alist-response))
    ((eq category 'top-artists) (counsel-spotify-oauth2-parse-items a-spotify-alist-response 'artists))
    ((eq category 'top-tracks) (counsel-spotify-oauth2-parse-items a-spotify-alist-response 'tracks))
+   ((eq category 'show) (counsel-spotify-oauth2-parse-shows a-spotify-alist-response 'shows))
    (t (counsel-spotify-parse-response a-spotify-alist-response))))
 
 (defun get-last-element (l)
@@ -253,7 +268,7 @@
          (result (condition-case err
                    (aio-await (counsel-spotify-oauth2-url-retrieve-p token query-url))
                    (error nil))))
-    (counsel-spotify-oauth2-parse-response result category)))
+     (counsel-spotify-oauth2-parse-response result category)))
 
 (provide 'counsel-spotify-search)
 ;;; counsel-spotify-search.el ends here
