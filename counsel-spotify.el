@@ -94,10 +94,13 @@
      0))
 
 ;; oauth2
-(defmacro counsel-spotify-oauth2-search-by (search-term &rest search-args)
-  (aio-lambda ()
-    (let ((result (aio-await (counsel-spotify-oauth2-search-p ,search-term ,@search-args))))
-      (counsel-spotify-update-ivy-candidates result))))
+(defmacro counsel-spotify-oauth2-search-by (&rest search-args)
+  `(lambda (search-term)
+     (funcall
+      (aio-lambda ()
+        (let ((result (aio-await (counsel-spotify-oauth2-search-p search-term ,@search-args))))
+          (counsel-spotify-update-ivy-candidates result))))
+     0))
 
 (aio-defun counsel-spotify-oauth2-fetch-by-type (type)
   (mapcar #'counsel-spotify-format
@@ -139,8 +142,8 @@
       (ivy-read ,prompt
                 (aio-await (counsel-spotify-oauth2-fetch-by-type ,type))
                 :action #'counsel-spotify-play-string
-                :caller "" ;; If this is nil caller will be C-X-Counsel which will pollute the minibuffer results if ivy-rich-mode is on
-                ))))
+                :caller "")))) ;; If this is nil caller will be C-X-Counsel which will pollute the minibuffer results if ivy-rich-mode is on
+                
 
 ;;;###autoload
 (defun counsel-spotify-search-user-playlist ()
@@ -229,7 +232,9 @@
   (counsel-spotify-verify-credentials)
   (ivy-read
    "Search episode: "
-   (counsel-spotify-oauth2-search-by :type '(episode)) :dynamic-collection t :action #'counsel-spotify-play-string))
+   (counsel-spotify-oauth2-search-by :type '(episode))
+   :dynamic-collection t
+   :action #'counsel-spotify-play-string))
 
 ;;;###autoload
 (defun counsel-spotify-save-current-track ()
@@ -242,27 +247,6 @@
      (let ((id (aio-await (counsel-spotify--get-current-track-id-p))))
        (counsel-spotify--save-current-track-from-id-p id)
        (message "Added")))))
-
-;;; Bug fix wip
-;;; Look into counsel-spotify-parse-response to see if it can handle the type you are passing in
-(defmacro counsel-spotify-oauth2-search-by-test (&rest search-args)
-  `(lambda (search-term)
-     (funcall
-      (aio-lambda ()
-        (let ((result (aio-await (counsel-spotify-oauth2-search-p search-term ,@search-args))))
-          (counsel-spotify-update-ivy-candidates result))))
-     0))
-
-
-(defun counsel-spotify-search-show-test ()
-  "Bring Ivy frontend to choose and play a (podcast) show"
-  (interactive)
-  (counsel-spotify-verify-credentials)
-  (ivy-read
-   "Search show: "
-   (counsel-spotify-oauth2-search-by-test :type '(show))
-   :dynamic-collection t
-   :action #'counsel-spotify-play-string))
 
 (provide 'counsel-spotify)
 ;;; counsel-spotify.el ends here
