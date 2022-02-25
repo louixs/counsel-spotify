@@ -172,15 +172,15 @@
          (episode-name (get-episode-name a-spotify-alist-response)))
     (concat show-name " - " episode-name)))
 
-(defun counsel-spotify-oauth2-parse-shows (a-spotify-alist-response a-type)
-  (let ((response (alist-get a-type a-spotify-alist-response)))
-    (counsel-spotify-oauth2-parse-items response a-type)))
-
 (defun counsel-spotify-oauth2-parse-items (a-spotify-alist-response a-type)
   (let ((items (alist-get 'items a-spotify-alist-response)))
     (mapcar (lambda (item)
               (counsel-spotify-parse-spotify-object item a-type))
             items)))
+
+(defun counsel-spotify-oauth2-parse-shows (a-spotify-alist-response a-type)
+  (let ((response (alist-get a-type a-spotify-alist-response)))
+    (counsel-spotify-oauth2-parse-items response a-type)))
 
 (defun counsel-spotify-oauth2-parse-new-releases (response)
   (counsel-spotify-oauth2-parse-items (alist-get 'albums response) 'album))
@@ -236,10 +236,34 @@
       (counsel-spotify-with-query-results (auth-token query-url results)
         (funcall a-callback (counsel-spotify-parse-response results))))))
 
+(defun counsel-spotify-get-playback-type (response)
+  (->> response
+       (alist-get 'context)
+       (alist-get 'type)))
+
+(defun counsel-spotify-playback-type? (type response)
+  (string= type (counsel-spotify-get-playback-type response)))
+
+(defun counsel-spotify-format-current-playback-episode (response)
+  (let* ((item (alist-get 'item response))
+         (show-name (->> item
+                         (alist-get 'show)
+                         (alist-get 'name)))
+         (episode-name (alist-get 'name item)))
+      ;; (desc (->> item
+      ;;            (alist-get 'description)
+      ;;            (s-truncate 100)))
+    (concat episode-name  " - " show-name)))
+
 ;; oauth2
 (defun counsel-spotify-oauth2-parse-response (a-spotify-alist-response category)
+  (setq rs/alist-response a-spotify-alist-response)
   (cond
    ((eq category 'user-playlist) (counsel-spotify-oauth2-parse-items a-spotify-alist-response category))
+   ;; returned data structure for playback is different if they are podcast episode
+   ((and (eq category 'current-playback)
+         (counsel-spotify-playback-type? "show" a-spotify-alist-response))
+    (counsel-spotify-format-current-playback-episode a-spotify-alist-response))
    ((eq category 'current-playback) (counsel-spotify-oauth2-format-current-playback-track a-spotify-alist-response))
    ((eq category 'new-releases) (counsel-spotify-oauth2-parse-new-releases a-spotify-alist-response))
    ((eq category 'top-artists) (counsel-spotify-oauth2-parse-items a-spotify-alist-response 'artists))
