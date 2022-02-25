@@ -263,8 +263,6 @@
    (counsel-spotify-oauth2-search-by-test :type '(show))
    :dynamic-collection t
    :action #'counsel-spotify-play-string))
-;;;
-
 
 (provide 'counsel-spotify)
 ;;; counsel-spotify.el ends here
