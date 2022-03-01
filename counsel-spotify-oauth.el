@@ -343,7 +343,6 @@
   (interactive)
   (message "Refreshing oauth token.")
   (let ((token (aio-await (counsel-spotify-oauth-fetch-token-p))))
-    (setq rs/refresh-oauth-token token)
     (oauth2-refresh-access token))
   (message "Finished refreshing oauth token."))
 
