@@ -280,6 +280,7 @@
     (setq counsel-spotify-spotify-api-auth-token token)
     token))
 
+;;;###autoload
 (aio-defun counsel-spotify-refresh-oauth-token-pkce ()
   (interactive)
   (message "Refreshing oauth token.")
@@ -298,7 +299,6 @@
   (counsel-spotify-refresh-oauth-token)
   (message "Finished resetting token"))
 
-;;;;
 
 (defun counsel-spotify-oauth-fetch-token ()
   ""
