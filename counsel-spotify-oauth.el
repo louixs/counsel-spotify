@@ -9,7 +9,7 @@
 ;; Version: 0.0.1
 ;; Keywords: Symbol’s value as variable is void: finder-known-keywords
 ;; Homepage: https://github.com/george/counsel-spotify-oauth
-;; Package-Requires: ((emacs "24.3") (oauth2 "0.16") (simple-httpd "1.5.1") (aio "1.0"))
+;; Package-Requires: ((emacs "24.3") (oauth2 "0.16") (simple-httpd "1.5.1") (aio "1.0") (request "0.3.2"))
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
@@ -23,6 +23,7 @@
 (require 'json)
 (require 'simple-httpd)
 (require 'aio)
+(require 'request)
 
 ;; Moved from counsel-spotify-search
 (defcustom counsel-spotify-spotify-api-authentication-url "https://accounts.spotify.com/api/token"
@@ -46,6 +47,11 @@
    If adding new feature you may need to add new scope.
    Here is the list of scopes: https://developer.spotify.com/documentation/general/guides/scopes/"
   :type 'string :group 'counsel-spotify)
+
+;; moved from counsel-spotify-search
+(defun counsel-spotify-basic-auth-credentials ()
+  "Return the Basic auth string that should be sent to ask for an auth token."
+  (concat "Basic " (base64-encode-string (concat counsel-spotify-client-id ":" counsel-spotify-client-secret) t)))
 
 ;; http server
 (defun start-redirect-server ()
@@ -175,7 +181,7 @@
   (counsel-spotify-oauth--concat-random-str-times (counsel-spotify-oauth--pkce-random-char-length)))
 
 (defun counsel-spotify-oauth--generate-code-challenge (code-verifier)
-  (secure-hash 'sha256 code-verifier))
+  (secure-hash 'sha256 code-verifier nil nil 'binary))
 
 (defun counsel-spotify-oauth2--request-pkce-authorization-p (auth-url client-id code-verifier redirect-uri &optional scope state)
   "Promisified auth request. The implementaiton is largely based on aio-url-retrieve.
@@ -203,28 +209,52 @@
           (aio-resolve promise
                        (lambda ()
                          code))))
-
       (browse-url (concat auth-url
                           (if (string-match-p "\?" auth-url) "&" "?")
                           "client_id=" (url-hexify-string client-id)
                           "&response_type=code"
                           "&redirect_uri=" (url-hexify-string (or redirect-uri "urn:ietf:wg:oauth:2.0:oob"))
                           "&code_challenge_method=S256"
-                          (concat "&code_challenge=" (url-hexify-string (counsel-spotify-oauth--generate-code-challenge code-verifier)))
+                          (concat "&code_challenge=" (base64url-encode-string
+                                                      (counsel-spotify-oauth--generate-code-challenge code-verifier)
+                                                      'no-pad))
                           (if scope (concat "&scope=" (url-hexify-string scope)) "")
                           (if state (concat "&state=" (url-hexify-string state)) ""))))))
 
-(defun counsel-spotify-oauth2--request-access-pkce (token-url client-id code code-verifier &optional redirect-uri)
+(defun counsel-spotify-oauth2-make-access-request (url data)
+  "Make a non-blocking access request to URL using DATA in POST.
+  Returns aio-promise."
+  (let ((promise (aio-promise)))
+    (prog1 promise
+      (condition-case error
+        (request url
+          :type "POST"
+          :headers `(("Content-Type" . "application/x-www-form-urlencoded")
+                     ("Authorization" . ,(counsel-spotify-basic-auth-credentials)))
+          :data data
+          :parser #'json-read
+          :success (cl-function
+                    (lambda (&key data &allow-other-keys)
+                      (aio-resolve promise (lambda () data))))
+          :error (cl-function
+                  (lambda (&rest args &key error &allow-other-keys)
+                    (signal (car error) (cdr error)))))
+        (error (aio-resolve promise
+                            (lambda ()
+                              (signal (car error) (cdr error)))))))))
+
+
+(aio-defun counsel-spotify-oauth2--request-access-pkce (token-url client-id code code-verifier &optional redirect-uri)
   ""
   (when code
-    (let ((result (oauth2-make-access-request
-                   token-url
-                   (concat
-                    "client_id=" client-id
-                    "&code=" code
-                    "&redirect_uri=" (url-hexify-string (or redirect-uri "urn:ietf:wg:oauth:2.0:oob"))
-                    "&grant_type=authorization_code"
-                    (concat "&code_verifier=" (url-hexify-string code-verifier))))))
+    (let ((result (aio-await (counsel-spotify-oauth2-make-access-request
+                              token-url
+                              (concat
+                               "&client_id=" client-id
+                               "&code=" code
+                               "&redirect_uri=" (url-hexify-string (or redirect-uri "urn:ietf:wg:oauth:2.0:oob"))
+                               "&grant_type=authorization_code"
+                               (concat "&code_verifier=" (url-hexify-string code-verifier)))))))
       (make-oauth2-token :client-id client-id
                          :access-token (cdr (assoc 'access_token result))
                          :refresh-token (cdr (assoc 'refresh_token result))
@@ -234,14 +264,14 @@
 (aio-defun counsel-spotify-oauth2--auth-pkce-p (auth-url token-url client-id &optional scope state redirect-uri)
   (let* ((code-verifier (counsel-spotify-oauth--generate-code-verifier))
          (auth-code (aio-await (counsel-spotify-oauth2--request-pkce-authorization-p auth-url client-id code-verifier redirect-uri scope state))))
-    (counsel-spotify-oauth2--request-access-pkce
-     token-url
-     client-id
-     auth-code
-     code-verifier
-     redirect-uri)))
+    (aio-await
+     (counsel-spotify-oauth2--request-access-pkce
+      token-url
+      client-id
+      auth-code
+      code-verifier
+      redirect-uri))))
 
-;; temporal
 (aio-defun counsel-spotify-oauth2-auth-and-store-pkce-p (auth-url token-url scope client-id &optional redirect-uri state)
   "Request access to a resource and store it using `plstore'."
   ;; We store a MD5 sum of all URL
@@ -254,10 +284,12 @@
         (make-oauth2-token :plstore plstore
                            :plstore-id id
                            :client-id client-id
+                           :client-secret nil
                            :access-token (plist-get plist :access-token)
                            :refresh-token (plist-get plist :refresh-token)
                            :token-url token-url
                            :access-response (plist-get plist :access-response))
+      ;; else
       (let ((token (aio-await (counsel-spotify-oauth2--auth-pkce-p auth-url token-url client-id scope state redirect-uri))))
         ;; Set the plstore
         (setf (oauth2-token-plstore token) plstore)
@@ -280,15 +312,42 @@
     (setq counsel-spotify-spotify-api-auth-token token)
     token))
 
-;;;###autoload
+
+(aio-defun counsel-spotify-oauth2-refresh-access (token)
+  "Refresh OAuth access TOKEN.
+TOKEN should be obtained with `oauth2-request-access'."
+  (let* ((url (oauth2-token-token-url token))
+         (data (concat "client_id=" (url-hexify-string (oauth2-token-client-id token))
+                       "&refresh_token=" (url-hexify-string (oauth2-token-refresh-token token))
+                       "&grant_type=refresh_token"))
+         (access-token (aio-await (counsel-spotify-oauth2-make-access-request url data))))
+    (setf (oauth2-token-access-token token) (alist-get 'access_token access-token))
+    ;; need to renew refresh token as well when using pkce flow for spotify api
+    ;; https://community.spotify.com/t5/Spotify-for-Developers/Refresh-token-revoked/td-p/5190755
+    (setf (oauth2-token-refresh-token token) (alist-get 'refresh_token access-token))
+    ;; If the token has a plstore, update it
+    (let ((plstore (oauth2-token-plstore token)))
+      (when plstore
+        (message "here running as well")
+        (plstore-put plstore (oauth2-token-plstore-id token)
+                     nil `(:access-token
+                           ,(oauth2-token-access-token token)
+                           :refresh-token
+                           ,(oauth2-token-refresh-token token)
+                           :access-response
+                           ,(oauth2-token-access-response token)))
+        (plstore-save plstore)))
+    token))
+
 (aio-defun counsel-spotify-refresh-oauth-token-pkce ()
   (interactive)
   (message "Refreshing oauth token.")
-  (let ((token (aio-await (counsel-spotify-oauth-fetch-token-pkce-p))))
-    (oauth2-refresh-access token))
-  (message "Finished refreshing oauth token."))
+  (let* ((token (aio-await (counsel-spotify-oauth-fetch-token-pkce-p)))
+         (refreshed-token (aio-await (counsel-spotify-oauth2-refresh-access token))))
+    (setq counsel-spotify-spotify-api-auth-token refreshed-token)
+    (message "Finished refreshing oauth token.")))
 
-(defun counsel-spotify-reset-oauth-token-pkce ()
+(aio-defun counsel-spotify-reset-oauth-token-pkce ()
   "Lets you re-do the authentication and re-fetch auth code from Spotify API in case
    something goes awry. It assumes that you haven't changed the default place where oauth2.plstore
    is placed."
@@ -296,65 +355,7 @@
   (message "Resetting oauth token")
   (delete-file (concat user-emacs-directory "oauth2.plstore"))
   (setq counsel-spotify-spotify-api-auth-token nil)
-  (counsel-spotify-refresh-oauth-token)
-  (message "Finished resetting token"))
-
-
-(defun counsel-spotify-oauth-fetch-token ()
-  ""
-  (when (eq counsel-spotify-spotify-api-auth-token nil)
-    (start-redirect-server)
-    (setq
-     counsel-spotify-spotify-api-auth-token
-     (oauth2-auth-and-store
-      counsel-spotify-spotify-api-authorization-url
-      counsel-spotify-spotify-api-authentication-url
-      counsel-spotify-spotify-api-scopes
-      counsel-spotify-client-id
-      counsel-spotify-client-secret
-      counsel-spotify-spotify-api-redirect-url))
-    (stop-redirect-server))
-  counsel-spotify-spotify-api-auth-token)
-
-(defun old--counsel-spotify-refresh-token ()
-  (start-redirect-server)
-  (setq
-   counsel-spotify-spotify-api-code
-   (oauth2-request-authorization
-    counsel-spotify-spotify-api-authorization-url
-    counsel-spotify-client-id
-    counsel-spotify-spotify-api-scopes
-    ""
-    counsel-spotify-spotify-api-redirect-url))
-  (stop-redirect-server)
-
-  (setq
-    counsel-spotify-spotify-api-auth-token
-    (oauth2-request-access
-     counsel-spotify-spotify-api-authentication-url
-     counsel-spotify-client-id
-     counsel-spotify-client-secret
-     counsel-spotify-spotify-api-code
-     counsel-spotify-spotify-api-redirect-url))
-
-  (oauth2-refresh-access counsel-spotify-spotify-api-auth-token))
-
-(aio-defun counsel-spotify-refresh-oauth-token ()
-  (interactive)
-  (message "Refreshing oauth token.")
-  (let ((token (aio-await (counsel-spotify-oauth-fetch-token-p))))
-    (oauth2-refresh-access token))
-  (message "Finished refreshing oauth token."))
-
-(defun counsel-spotify-reset-oauth-token ()
-  "Lets you re-do the authentication and re-fetch auth code from Spotify API in case
-   something goes awry. It assumes that you haven't changed the default place where oauth2.plstore
-   is placed."
-  (interactive)
-  (message "Resetting oauth token")
-  (delete-file (concat user-emacs-directory "oauth2.plstore"))
-  (setq counsel-spotify-spotify-api-auth-token nil)
-  (counsel-spotify-refresh-oauth-token)
+  (aio-await (counsel-spotify-refresh-oauth-token-pkce))
   (message "Finished resetting token"))
 
 (defun counsel-spotify-oauth2-query-results (token url cb &optional request-method request-data)

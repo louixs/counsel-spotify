@@ -51,10 +51,6 @@
   (when (or (string= counsel-spotify-client-id "") (string= counsel-spotify-client-secret ""))
     (error "The variables counsel-spotify-client-id or counsel-spotify-client-secret are undefined and both are required to authenticate to the Spotify API.  See https://developer.spotify.com/my-applications")))
 
-(defun counsel-spotify-basic-auth-credentials ()
-  "Return the Basic auth string that should be sent to ask for an auth token."
-  (concat "Basic " (base64-encode-string (concat counsel-spotify-client-id ":" counsel-spotify-client-secret) t)))
-
 (defclass counsel-spotify-playable ()
   ((name :initarg :name :initform "" :reader name)
    (uri :initarg :uri :initform "" :reader uri)))
@@ -257,7 +253,6 @@
 
 ;; oauth2
 (defun counsel-spotify-oauth2-parse-response (a-spotify-alist-response category)
-  (setq rs/alist-response a-spotify-alist-response)
   (cond
    ((eq category 'user-playlist) (counsel-spotify-oauth2-parse-items a-spotify-alist-response category))
    ;; returned data structure for playback is different if they are podcast episode
@@ -285,14 +280,30 @@
        (let ((parsed (counsel-spotify-oauth2-parse-response results category)))
          (funcall a-callback parsed))))))
 
+(defun counsel-spotify-oauth2-api-error (result)
+  "If API returns error in its response, this function returns its error status.
+   For example, error status 401 means Invalid Auth token. You need to refresh auth token to solve this."
+  (when-let ((err (alist-get 'error result)))
+    (let ((status (alist-get 'status err))
+          (error-msg (alist-get 'message err)))
+      status)))
+
 (aio-defun counsel-spotify-oauth2-search-p (&rest rest)
   (let* ((query-url (apply #'counsel-spotify-oauth2-make-query rest))
          (token (aio-await (counsel-spotify-oauth-fetch-token-pkce-p)))
          (category (get-last-element rest))
          (result (condition-case err
                    (aio-await (counsel-spotify-oauth2-url-retrieve-p token query-url))
-                   (error nil))))
-     (counsel-spotify-oauth2-parse-response result category)))
+                   (error
+                    (message "Oauth2 search retrieve error"))))
+         (error-status (counsel-spotify-oauth2-api-error result)))
+    ;; (if error-status
+    ;;     (cond
+    ;;      ((= 401 error-status) (progn
+    ;;                              (message "error 401")
+    ;;                              (counsel-spotify-refresh-oauth-token-pkce)
+    ;;                              (counsel-spotify-oauth2-search-p rest)))))
+    (counsel-spotify-oauth2-parse-response result category)))
 
 (provide 'counsel-spotify-search)
 ;;; counsel-spotify-search.el ends here
