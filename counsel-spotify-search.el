@@ -123,7 +123,7 @@
 
 (defun format-artists-name (artists)
   (->> artists
-       (-map (lambda (artist) (->> artist (alist-get 'name) as-utf8)))
+       (-map (lambda (artist) (->> artist (alist-get 'name))))
        (--reduce (concat acc ", " it))))
 
 (defun get-artist-name (response)
@@ -135,21 +135,23 @@
 (defun get-track-name (response)
   (->> response
     (alist-get 'item)
-    (alist-get 'name)
-    as-utf8))
+    (alist-get 'name)))
 
 (defun get-album-name (response)
   (->> response
     (alist-get 'item)
     (alist-get 'album)
-    (alist-get 'name)
-    as-utf8))
+    (alist-get 'name)))
 
-(defun counsel-spotify-oauth2-format-current-playback-track (a-spotify-alist-response)
+(defun counsel-spotify-oauth2-format-current-playback-track-old (a-spotify-alist-response)
   (let* ((artist-name (get-artist-name a-spotify-alist-response))
          (track-name (get-track-name a-spotify-alist-response))
          (album-name (get-album-name a-spotify-alist-response)))
     (concat track-name " - " artist-name " - " album-name " (Album)")))
+
+(defun counsel-spotify-oauth2-format-current-playback-track (a-spotify-alist-response a-type)
+  (let ((item (alist-get 'item a-spotify-alist-response)))
+    (counsel-spotify-parse-spotify-object a-spotify-alist-response a-type)))
 
 ;; format episodes
 (defun get-episode-name (response)
@@ -253,13 +255,14 @@
 
 ;; oauth2
 (defun counsel-spotify-oauth2-parse-response (a-spotify-alist-response category)
+  (setq rs/response a-spotify-alist-response)
   (cond
    ((eq category 'user-playlist) (counsel-spotify-oauth2-parse-items a-spotify-alist-response category))
    ;; returned data structure for playback is different if they are podcast episode
    ((and (eq category 'current-playback)
          (counsel-spotify-playback-type? "show" a-spotify-alist-response))
     (counsel-spotify-format-current-playback-episode a-spotify-alist-response))
-   ((eq category 'current-playback) (counsel-spotify-oauth2-format-current-playback-track a-spotify-alist-response))
+   ((eq category 'current-playback) (counsel-spotify-oauth2-format-current-playback-track a-spotify-alist-response 'tracks))
    ((eq category 'new-releases) (counsel-spotify-oauth2-parse-new-releases a-spotify-alist-response))
    ((eq category 'top-artists) (counsel-spotify-oauth2-parse-items a-spotify-alist-response 'artists))
    ((eq category 'top-tracks) (counsel-spotify-oauth2-parse-items a-spotify-alist-response 'tracks))
