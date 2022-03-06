@@ -51,6 +51,10 @@
   "Format an ALBUM Spotify object."
   (format "%s - %s" (artist-name album) (name album)))
 
+(cl-defmethod counsel-spotify-format ((episode counsel-spotify-episode))
+  "Format an EPISODE Spotify object."
+  (format "%s | %s" (name episode) (description episode)))
+
 (cl-defmethod counsel-spotify-format ((current-playback counsel-spotify-current-playback))
   "Format a PLAYBACK Spotify object."
   (format "%s - %s (Artists) - %s (Album)" (name current-playback) (artist-name current-playback) (album current-playback)))

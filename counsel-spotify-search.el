@@ -65,6 +65,9 @@
 (defclass counsel-spotify-show (counsel-spotify-playable)
   ((publisher :initarg :publisher :initform "" :reader publisher)))
 
+(defclass counsel-spotify-episode (counsel-spotify-playable)
+  ((description :initarg :description :initform "" :reader description)))
+
 (defclass counsel-spotify-current-playback (counsel-spotify-non-playable)
   ((artist-name :initarg :artist-name :initform "" :reader artist-name)
    (album :initarg :album :initform "" :reader album)))
@@ -90,11 +93,18 @@
     (make-instance 'counsel-spotify-album :name name :uri uri :artist-name artist-name)))
 
 (cl-defmethod counsel-spotify-parse-spotify-object (a-spotify-show-object (_type (eql shows)))
-  "Parse A-SPOTIFY-SHOW-OBJECT of _TYPE show."
+  "Parse A-SPOTIFY-SHOW-OBJECT of _TYPE shows."
   (let ((name (alist-get 'name a-spotify-show-object))
         (publisher (alist-get 'publisher a-spotify-show-object))
         (uri (alist-get 'uri a-spotify-show-object)))
     (make-instance 'counsel-spotify-show :name name :uri uri :publisher publisher)))
+
+(cl-defmethod counsel-spotify-parse-spotify-object (a-spotify-episode-object (_type (eql episodes)))
+  "Parse A-SPOTIFY-EPISODE-OBJECT of _TYPE episodes."
+  (let ((name (alist-get 'name a-spotify-episode-object))
+        (description (alist-get 'description a-spotify-episode-object))
+        (uri (alist-get 'uri a-spotify-episode-object)))
+    (make-instance 'counsel-spotify-episode :name name :uri uri :description description)))
 
 (cl-defmethod counsel-spotify-parse-spotify-object (a-spotify-track-object (_type (eql tracks)))
   "Parse A-SPOTIFY-TRACK-OBJECT of _TYPE track."
@@ -190,6 +200,10 @@
   (let ((response (alist-get a-type a-spotify-alist-response)))
     (counsel-spotify-oauth2-parse-items response a-type)))
 
+(defun counsel-spotify-oauth2-parse-episodes (a-spotify-alist-response a-type)
+  (let ((response (alist-get a-type a-spotify-alist-response)))
+    (counsel-spotify-oauth2-parse-items response a-type)))
+
 (defun counsel-spotify-oauth2-parse-new-releases (response)
   (counsel-spotify-oauth2-parse-items (alist-get 'albums response) 'album))
 
@@ -269,6 +283,7 @@
    ((eq category 'top-artists) (counsel-spotify-oauth2-parse-items a-spotify-alist-response 'artists))
    ((eq category 'top-tracks) (counsel-spotify-oauth2-parse-items a-spotify-alist-response 'tracks))
    ((eq category 'show) (counsel-spotify-oauth2-parse-shows a-spotify-alist-response 'shows))
+   ((eq category 'episode) (counsel-spotify-oauth2-parse-episodes a-spotify-alist-response 'episodes))
    (t (counsel-spotify-parse-response a-spotify-alist-response))))
 
 (defun get-last-element (l)
