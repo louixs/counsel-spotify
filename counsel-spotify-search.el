@@ -254,8 +254,8 @@
 
 (defun playback-episode? (a-spotify-alist-response category)
   "Check if current playback is an episode"
-  (and (eq category 'current-playback
-           (counsel-spotify-playback-type? "episode" a-spotify-alist-response))))
+  (and (eq category 'current-playback)
+       (counsel-spotify-playback-type? "episode" a-spotify-alist-response)))
 
 ;; oauth2
 (defun counsel-spotify-oauth2-parse-response (a-spotify-alist-response category)

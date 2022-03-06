@@ -328,7 +328,6 @@ TOKEN should be obtained with `oauth2-request-access'."
     ;; If the token has a plstore, update it
     (let ((plstore (oauth2-token-plstore token)))
       (when plstore
-        (message "here running as well")
         (plstore-put plstore (oauth2-token-plstore-id token)
                      nil `(:access-token
                            ,(oauth2-token-access-token token)
