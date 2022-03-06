@@ -313,7 +313,7 @@
     token))
 
 
-(aio-defun counsel-spotify-oauth2-refresh-access (token)
+(aio-defun counsel-spotify-oauth2-refresh-access-pkce (token)
   "Refresh OAuth access TOKEN.
 TOKEN should be obtained with `oauth2-request-access'."
   (let* ((url (oauth2-token-token-url token))
@@ -342,7 +342,7 @@ TOKEN should be obtained with `oauth2-request-access'."
   (interactive)
   (message "Refreshing oauth token.")
   (let* ((token (aio-await (counsel-spotify-oauth-fetch-token-pkce-p)))
-         (refreshed-token (aio-await (counsel-spotify-oauth2-refresh-access token))))
+         (refreshed-token (aio-await (counsel-spotify-oauth2-refresh-access-pkce token))))
     (setq counsel-spotify-spotify-api-auth-token refreshed-token)
     (message "Finished refreshing oauth token.")))
 
@@ -382,7 +382,6 @@ TOKEN should be obtained with `oauth2-request-access'."
        (error (aio-resolve promise
                            (lambda ()
                              (signal (car error) (cdr error)))))))))
-
 
 (provide 'counsel-spotify-oauth)
 ;;; counsel-spotify-oauth.el ends here
