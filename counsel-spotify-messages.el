@@ -57,7 +57,7 @@
 
 (cl-defmethod counsel-spotify-format ((current-playback counsel-spotify-current-playback-episode))
   "Format a EPISODE PLAYBACK Spotify object."
-  (format "%s - %s (Show)" (name current-playback) (show-name current-playback)))
+  (format "%s - %s (Podcast)" (name current-playback) (show-name current-playback)))
 
 (provide 'counsel-spotify-messages)
 ;;; counsel-spotify-messages.el ends here
