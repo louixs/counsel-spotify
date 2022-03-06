@@ -30,10 +30,6 @@
   "Variable to define spotify API url."
   :type 'string :group 'counsel-spotify)
 
-;; (defcustom counsel-spotify-spotify-api-authentication-url "https://accounts.spotify.com/api/token"
-;;   "Variable to define spotify API url for getting the access token."
-;;   :type 'string :group 'counsel-spotify)
-
 (defcustom counsel-spotify-new-releases-country "GB"
   "Specify country for new releases in ISO 3166-1 alpha-2 country code."
   :type 'string :group 'counsel-spotify)
@@ -55,6 +51,9 @@
   ((name :initarg :name :initform "" :reader name)
    (uri :initarg :uri :initform "" :reader uri)))
 
+(defclass counsel-spotify-non-playable ()
+  ((name :initarg :name :initform "" :reader name)))
+
 (defclass counsel-spotify-album (counsel-spotify-playable)
   ((artist-name :initarg :artist-name :initform "" :reader artist-name)))
 
@@ -65,6 +64,10 @@
 
 (defclass counsel-spotify-show (counsel-spotify-playable)
   ((publisher :initarg :publisher :initform "" :reader publisher)))
+
+(defclass counsel-spotify-current-track (counsel-spotify-non-playable)
+  ((artist :initarg :artist :initform "" :reader artist)
+   (album :initarg :album :initform "" :reader album)))
 
 (cl-defgeneric counsel-spotify-parse-spotify-object (a-spotify-object type)
   "Parse A-SPOTIFY-OBJECT knowing it has the type TYPE.")
@@ -101,6 +104,17 @@
                    :uri uri
                    :artist main-artist
                    :duration duration-in-ms
+                   :album album)))
+
+;; for displaying information about current tunes that is not podcast/show episodes
+(cl-defmethod counsel-spotify-parse-spotify-object (a-spotify-current-track-object _type)
+  "Parse a A-SPOTIFY-CURRENT-TRACK-OBJECT of type _TYPE current-track"
+  (let ((name (alist-get 'name spotify-object))
+        (main-artist (counsel-spotify-parse-spotify-object (elt (alist-get 'artists a-spotify-track-object) 0) 'artists))
+        (album (counsel-spotify-parse-spotify-object (alist-get 'album a-spotify-track-object) 'albums)))
+    (make-instance 'counsel-spotify-current-track
+                   :name name
+                   :artist main-artist
                    :album album)))
 
 (defun counsel-spotify-parse-items (a-spotify-alist-response a-type)
@@ -151,6 +165,7 @@
 
 (defun counsel-spotify-oauth2-format-current-playback-track (a-spotify-alist-response a-type)
   (let ((item (alist-get 'item a-spotify-alist-response)))
+    (setq rs/item item)
     (counsel-spotify-parse-spotify-object a-spotify-alist-response a-type)))
 
 ;; format episodes
