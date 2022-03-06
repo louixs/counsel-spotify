@@ -184,8 +184,8 @@
                                             '(top-tracks)))
 
 ;;;###autoload
-(defun counsel-spotify-show-current-track ()
-  "Show information about currently playing track."
+(defun counsel-spotify-show-current-playback ()
+  "Show information about current playback"
   (interactive)
   (counsel-spotify-verify-credentials)
   (funcall
