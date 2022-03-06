@@ -191,8 +191,7 @@
   (funcall
    (aio-lambda ()
      (let ((data (aio-await (counsel-spotify-oauth2-search-p "" :type '(current-playback)))))
-       (setq rs/data data)
-       (message data)))))
+       (message (counsel-spotify-format data))))))
 
 ;;;###autoload
 (defun counsel-spotify-search-album ()

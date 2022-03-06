@@ -51,5 +51,9 @@
   "Format an ALBUM Spotify object."
   (format "%s - %s" (artist-name album) (name album)))
 
+(cl-defmethod counsel-spotify-format ((current-playback counsel-spotify-current-playback))
+  "Format a PLAYBACK Spotify object."
+  (format "%s - %s (Artists) - %s (Album)" (name current-playback) (artist-name current-playback) (album current-playback)))
+
 (provide 'counsel-spotify-messages)
 ;;; counsel-spotify-messages.el ends here

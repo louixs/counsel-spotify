@@ -42,6 +42,25 @@
   "Spotify application client secret."
   :type 'string :group 'counsel-spotify)
 
+(defun format-artists-name (artists)
+  (->> artists
+       (-map (lambda (artist) (->> artist (alist-get 'name))))
+       (--reduce (concat acc ", " it))))
+
+(defun get-artist-name (response)
+  (->> response
+    (alist-get 'artists)
+    format-artists-name))
+
+(defun get-track-name (response)
+  (->> response
+    (alist-get 'name)))
+
+(defun get-album-name (response)
+  (->> response
+    (alist-get 'album)
+    (alist-get 'name)))
+
 (defun counsel-spotify-verify-credentials ()
   "Tell the user that the credentials are not set."
   (when (or (string= counsel-spotify-client-id "") (string= counsel-spotify-client-secret ""))
@@ -65,8 +84,8 @@
 (defclass counsel-spotify-show (counsel-spotify-playable)
   ((publisher :initarg :publisher :initform "" :reader publisher)))
 
-(defclass counsel-spotify-current-track (counsel-spotify-non-playable)
-  ((artist :initarg :artist :initform "" :reader artist)
+(defclass counsel-spotify-current-playback (counsel-spotify-non-playable)
+  ((artist-name :initarg :artist-name :initform "" :reader artist-name)
    (album :initarg :album :initform "" :reader album)))
 
 (cl-defgeneric counsel-spotify-parse-spotify-object (a-spotify-object type)
@@ -107,15 +126,15 @@
                    :album album)))
 
 ;; for displaying information about current tunes that is not podcast/show episodes
-(cl-defmethod counsel-spotify-parse-spotify-object (a-spotify-current-track-object _type)
-  "Parse a A-SPOTIFY-CURRENT-TRACK-OBJECT of type _TYPE current-track"
-  (let ((name (alist-get 'name spotify-object))
-        (main-artist (counsel-spotify-parse-spotify-object (elt (alist-get 'artists a-spotify-track-object) 0) 'artists))
-        (album (counsel-spotify-parse-spotify-object (alist-get 'album a-spotify-track-object) 'albums)))
-    (make-instance 'counsel-spotify-current-track
-                   :name name
-                   :artist main-artist
-                   :album album)))
+(cl-defmethod counsel-spotify-parse-spotify-object (a-spotify-current-playback-object (_type (eql current-playback)))
+  "Parse a A-SPOTIFY-CURRENT-TRACK-OBJECT of type _TYPE current-playback"
+  (let ((playback-name (alist-get 'name a-spotify-current-playback-object))
+        (artist-name (get-artist-name a-spotify-current-playback-object))
+        (album-name (get-album-name a-spotify-current-playback-object)))
+    (make-instance 'counsel-spotify-current-playback
+                   :name playback-name
+                   :artist-name artist-name
+                   :album album-name)))
 
 (defun counsel-spotify-parse-items (a-spotify-alist-response a-type)
   "Parse every item in A-SPOTIFY-ALIST-RESPONSE as being of the type A-TYPE."
@@ -130,33 +149,6 @@
      (counsel-spotify-parse-items a-spotify-alist-response  (car category)))
    a-spotify-alist-response))
 
-;; oauth2
-;; This is taken straight from the test file
-(defun as-utf8 (a-string)
-  (decode-coding-string (string-make-unibyte a-string) 'utf-8))
-
-(defun format-artists-name (artists)
-  (->> artists
-       (-map (lambda (artist) (->> artist (alist-get 'name))))
-       (--reduce (concat acc ", " it))))
-
-(defun get-artist-name (response)
-  (->> response
-    (alist-get 'item)
-    (alist-get 'artists)
-    format-artists-name))
-
-(defun get-track-name (response)
-  (->> response
-    (alist-get 'item)
-    (alist-get 'name)))
-
-(defun get-album-name (response)
-  (->> response
-    (alist-get 'item)
-    (alist-get 'album)
-    (alist-get 'name)))
-
 (defun counsel-spotify-oauth2-format-current-playback-track-old (a-spotify-alist-response)
   (let* ((artist-name (get-artist-name a-spotify-alist-response))
          (track-name (get-track-name a-spotify-alist-response))
@@ -165,8 +157,7 @@
 
 (defun counsel-spotify-oauth2-format-current-playback-track (a-spotify-alist-response a-type)
   (let ((item (alist-get 'item a-spotify-alist-response)))
-    (setq rs/item item)
-    (counsel-spotify-parse-spotify-object a-spotify-alist-response a-type)))
+    (counsel-spotify-parse-spotify-object item a-type)))
 
 ;; format episodes
 (defun get-episode-name (response)
@@ -270,14 +261,13 @@
 
 ;; oauth2
 (defun counsel-spotify-oauth2-parse-response (a-spotify-alist-response category)
-  (setq rs/response a-spotify-alist-response)
   (cond
    ((eq category 'user-playlist) (counsel-spotify-oauth2-parse-items a-spotify-alist-response category))
    ;; returned data structure for playback is different if they are podcast episode
    ((and (eq category 'current-playback)
          (counsel-spotify-playback-type? "show" a-spotify-alist-response))
     (counsel-spotify-format-current-playback-episode a-spotify-alist-response))
-   ((eq category 'current-playback) (counsel-spotify-oauth2-format-current-playback-track a-spotify-alist-response 'tracks))
+   ((eq category 'current-playback) (counsel-spotify-oauth2-format-current-playback-track a-spotify-alist-response 'current-playback))
    ((eq category 'new-releases) (counsel-spotify-oauth2-parse-new-releases a-spotify-alist-response))
    ((eq category 'top-artists) (counsel-spotify-oauth2-parse-items a-spotify-alist-response 'artists))
    ((eq category 'top-tracks) (counsel-spotify-oauth2-parse-items a-spotify-alist-response 'tracks))
