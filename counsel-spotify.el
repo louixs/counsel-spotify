@@ -38,7 +38,6 @@
   "Customs for `counsel-spotify'"
   :group 'applications)
 
-
 ;;;;;;;;;;;;;;;;;
 ;; Controllers ;;
 ;;;;;;;;;;;;;;;;;
