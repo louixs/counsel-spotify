@@ -27,8 +27,9 @@
          (track (->> response (alist-get 'item)))
          (id (alist-get 'id track))
          (name (alist-get 'name track)))
-    (message (concat "Current track: " name " id: " id))
-    id))
+    `((track-name . ,name)
+      (track-id . ,id))))
+    
 
 (defun counsel-spotify--save-current-track-parser (msg)
   "For some reason spotify api returns an empty json even after a successful addition of the current track
@@ -38,14 +39,16 @@
     (error
      (message msg))))
 
-(aio-defun counsel-spotify--save-current-track-from-id-p (id)
-  (let* ((url (concat counsel-spotify-spotify-api-url
+(aio-defun counsel-spotify--save-current-track-from-id-p (data)
+  (let* ((id (alist-get 'track-id data))
+         (track-name (alist-get 'track-name data))
+         (url (concat counsel-spotify-spotify-api-url
                       "/me/tracks"
                       "?ids="
                       id))
          (result (aio-await (counsel-spotify-request-p url
                                                        :type "PUT"
-                                                       :parser (lambda () (counsel-spotify--save-current-track-parser (concat "Added " id "to the Liked Songs playlist.")))
+                                                       :parser (lambda () (counsel-spotify--save-current-track-parser (concat "Added " "'" track-name "'" " to the Liked Songs playlist.")))
                                                        :headers `(("Content-Type" . "application/json")
                                                                   ,(counsel-spotify-oauth2-auth-bearer))))))))
 

@@ -214,12 +214,12 @@
   (ivy-read "Search tracks by album: " (counsel-spotify-search-by :filter 'album :type '(track)) :dynamic-collection t :action #'counsel-spotify-play-string))
 
 ;;;###autoload
-(defun counsel-spotify-search-show ()
-  "Bring Ivy frontend to choose and play a (podcast) show"
+(defun counsel-spotify-search-podcasts ()
+  "Bring Ivy frontend to choose and play a podcast"
   (interactive)
   (counsel-spotify-verify-credentials)
   (ivy-read
-   "Search show: "
+   "Search podcasts: "
    (counsel-spotify-oauth2-search-by :type '(show))
    :dynamic-collection t
    :action #'counsel-spotify-play-string))
@@ -230,7 +230,7 @@
   (interactive)
   (counsel-spotify-verify-credentials)
   (ivy-read
-   "Search episode: "
+   "Search podcast episodes: "
    (counsel-spotify-oauth2-search-by :type '(episode))
    :dynamic-collection t
    :action #'counsel-spotify-play-string))
@@ -243,8 +243,8 @@
   (interactive)
   (funcall
    (aio-lambda ()
-     (let ((id (aio-await (counsel-spotify--get-current-track-id-p))))
-       (counsel-spotify--save-current-track-from-id-p id)))))
+     (let ((data (aio-await (counsel-spotify--get-current-track-id-p))))
+       (counsel-spotify--save-current-track-from-id-p data)))))
 
 (provide 'counsel-spotify)
 ;;; counsel-spotify.el ends here
