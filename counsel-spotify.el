@@ -244,8 +244,8 @@
   (funcall
    (aio-lambda ()
      (let ((id (aio-await (counsel-spotify--get-current-track-id-p))))
-       (counsel-spotify--save-current-track-from-id-p id)
-       (message "Added")))))
+       (counsel-spotify--save-current-track-from-id-p id)))))
+       
 
 (provide 'counsel-spotify)
 ;;; counsel-spotify.el ends here

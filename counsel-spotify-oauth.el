@@ -19,6 +19,7 @@
 ;;
 ;;; Code:
 
+(require 'cl-lib)
 (require 'oauth2)
 (require 'json)
 (require 'simple-httpd)
@@ -92,7 +93,6 @@
           (aio-resolve promise
                        (lambda ()
                          code))))
-
       (browse-url (concat auth-url
                           (if (string-match-p "\?" auth-url) "&" "?")
                           "client_id=" (url-hexify-string client-id)
@@ -221,28 +221,40 @@
                           (if scope (concat "&scope=" (url-hexify-string scope)) "")
                           (if state (concat "&state=" (url-hexify-string state)) ""))))))
 
+(cl-defun counsel-spotify-request-p (url
+                                     &key
+                                     data
+                                     type
+                                     headers
+                                     (parser #'json-read))
+  "Make a non-blocking request to URL.
+  Returns an aio-promise."
+ (let ((promise (aio-promise)))
+   (prog1 promise
+     (condition-case error
+       (request url
+         :type type
+         :headers headers
+         :data data
+         :parser parser
+         :success (cl-function
+                   (lambda (&key data &allow-other-keys)
+                     (aio-resolve promise (lambda () data))))
+         :error (cl-function
+                 (lambda (&rest args &key error &allow-other-keys)
+                   (signal (car error) (cdr error)))))
+       (error (aio-resolve promise
+                           (lambda ()
+                             (signal (car error) (cdr error)))))))))
+
 (defun counsel-spotify-oauth2-make-access-request (url data)
   "Make a non-blocking access request to URL using DATA in POST.
   Returns aio-promise."
-  (let ((promise (aio-promise)))
-    (prog1 promise
-      (condition-case error
-        (request url
-          :type "POST"
-          :headers `(("Content-Type" . "application/x-www-form-urlencoded")
-                     ("Authorization" . ,(counsel-spotify-basic-auth-credentials)))
-          :data data
-          :parser #'json-read
-          :success (cl-function
-                    (lambda (&key data &allow-other-keys)
-                      (aio-resolve promise (lambda () data))))
-          :error (cl-function
-                  (lambda (&rest args &key error &allow-other-keys)
-                    (signal (car error) (cdr error)))))
-        (error (aio-resolve promise
-                            (lambda ()
-                              (signal (car error) (cdr error)))))))))
-
+  (counsel-spotify-request-p url
+                             :type "POST"
+                             :headers `(("Content-Type" . "application/x-www-form-urlencoded")
+                                        ("Authorization" . ,(counsel-spotify-basic-auth-credentials)))
+                             :data data))
 
 (aio-defun counsel-spotify-oauth2--request-access-pkce (token-url client-id code code-verifier &optional redirect-uri)
   ""
@@ -321,6 +333,7 @@ TOKEN should be obtained with `oauth2-request-access'."
                        "&refresh_token=" (url-hexify-string (oauth2-token-refresh-token token))
                        "&grant_type=refresh_token"))
          (access-token (aio-await (counsel-spotify-oauth2-make-access-request url data))))
+    (message "access pkce")
     (setf (oauth2-token-access-token token) (alist-get 'access_token access-token))
     ;; need to renew refresh token as well when using pkce flow for spotify api
     ;; https://community.spotify.com/t5/Spotify-for-Developers/Refresh-token-revoked/td-p/5190755
