@@ -17,21 +17,23 @@
 (defun counsel-spotify-oauth2-auth-bearer ()
   `("Authorization" . ,(concat "Bearer " (oauth2-token-access-token counsel-spotify-spotify-api-auth-token))))
 
-(aio-defun counsel-spotify--get-current-track-id-p ()
-  (let* ((url (concat counsel-spotify-spotify-api-url "/me/player"))
+(aio-defun counsel-spotify--get-current-playback-id-p ()
+  (let* ((url (concat counsel-spotify-spotify-api-url "/me/player/currently-playing?additional_types=track,episode"))
          (response (aio-await (counsel-spotify-request-p url
                                                          :type "GET"
                                                          :headers `(("Content-Type" . "application/json")
                                                                     ,(counsel-spotify-oauth2-auth-bearer)))))
                                                                     
-         (track (->> response (alist-get 'item)))
-         (id (alist-get 'id track))
-         (name (alist-get 'name track)))
-    `((track-name . ,name)
-      (track-id . ,id))))
+         (item (->> response (alist-get 'item)))
+         (id (alist-get 'id item))
+         (type (alist-get 'type item))
+         (name (alist-get 'name item)))
+    `((name . ,name)
+      (id . ,id)
+      (type . ,type))))
     
 
-(defun counsel-spotify--save-current-track-parser (msg)
+(defun counsel-spotify--save-current-playback-parser (msg)
   "For some reason spotify api returns an empty json even after a successful addition of the current track
    resulting in throwing an error. We don't want to throw an error to user in this case so wrapping it with condition-case to avoid confusion."
   (condition-case error
@@ -39,20 +41,23 @@
     (error
      (message msg))))
 
-(aio-defun counsel-spotify--save-current-track-from-id-p (data)
-  (let* ((id (alist-get 'track-id data))
-         (track-name (alist-get 'track-name data))
+(aio-defun counsel-spotify--save-current-playback-from-id-p (data)
+  (let* ((id (alist-get 'id data))
+         (track-name (alist-get 'name data))
+         (type (alist-get 'type data))
+         (save-to (cond
+                   ((string-equal type "track") "tracks")
+                   ((string-equal type "episode") "episodes")))
          (url (concat counsel-spotify-spotify-api-url
-                      "/me/tracks"
+                      "/me/"
+                      save-to
                       "?ids="
                       id))
          (result (aio-await (counsel-spotify-request-p url
                                                        :type "PUT"
-                                                       :parser (lambda () (counsel-spotify--save-current-track-parser (concat "Added " "'" track-name "'" " to the Liked Songs playlist.")))
+                                                       :parser (lambda () (counsel-spotify--save-current-playback-parser (concat "Added " "'" track-name "'" " to the Liked Songs playlist.")))
                                                        :headers `(("Content-Type" . "application/json")
                                                                   ,(counsel-spotify-oauth2-auth-bearer))))))))
-
- 
 
 (provide 'counsel-spotify-tracks)
 ;;; counsel-spotify-tracks.el ends here

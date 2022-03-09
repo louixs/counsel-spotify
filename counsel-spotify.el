@@ -236,15 +236,15 @@
    :action #'counsel-spotify-play-string))
 
 ;;;###autoload
-(defun counsel-spotify-save-current-track ()
+(defun counsel-spotify-save-current-playback ()
   "Using player API to retrieve the currently playing track's ID.
    By PUT:ting the retrieved ID to the tracks API, this saves the currently playing track to user's 'Your Music' library.
    Basically same as clicking on the heart/like symbol by the tracks. The saved/liked track are stored in the Liked Songs playlist on Spotify."
   (interactive)
   (funcall
    (aio-lambda ()
-     (let ((data (aio-await (counsel-spotify--get-current-track-id-p))))
-       (counsel-spotify--save-current-track-from-id-p data)))))
+     (let ((data (aio-await (counsel-spotify--get-current-playback-id-p))))
+       (counsel-spotify--save-current-playback-from-id-p data)))))
 
 (provide 'counsel-spotify)
 ;;; counsel-spotify.el ends here
