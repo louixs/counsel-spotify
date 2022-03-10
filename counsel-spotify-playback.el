@@ -16,22 +16,24 @@
 (defun counsel-spotify-oauth2-auth-bearer ()
   `("Authorization" . ,(concat "Bearer " (oauth2-token-access-token counsel-spotify-spotify-api-auth-token))))
 
-(aio-defun counsel-spotify--get-current-playback-id-p ()
+(defun counsel-spotify--ask-user-episode-or-show (type)
+  "Interactrively asks user to choose the type of item to save if because if it's a podcast episode, user can save the episode itself or the podcast show to their library.
+   To call this programatically use call-interactively function."
+  (interactive
+   (list
+    (completing-read "Would you like to save the podcast episode or the show?" '("episode" "show"))))
+ type)
+
+(aio-defun counsel-spotify--get-current-playback-data-p ()
   (let* ((url (concat counsel-spotify-spotify-api-url "/me/player/currently-playing?additional_types=track,episode"))
          (response (aio-await (counsel-spotify-request-p url
                                                          :type "GET"
                                                          :headers `(("Content-Type" . "application/json")
                                                                     ,(counsel-spotify-oauth2-auth-bearer)))))
-         (item (alist-get 'item response))
-         (id (alist-get 'id item))
-         (type (alist-get 'type item))
-         (name (alist-get 'name item)))
-    `((name . ,name)
-      (id . ,id)
-      (type . ,type))))
-    
+         (item (alist-get 'item response)))
+    item))
 
-(defun counsel-spotify--save-current-playback-parser (msg)
+(defun counsel-spotify--save-current-playback-request-parser (msg)
   "For some reason spotify api returns an empty json even after a successful addition of the current track
    resulting in throwing an error. We don't want to throw an error to user in this case so wrapping it with condition-case to avoid confusion."
   (condition-case error
@@ -39,23 +41,41 @@
     (error
      (message msg))))
 
-(aio-defun counsel-spotify--save-current-playback-from-id-p (data)
-  (let* ((id (alist-get 'id data))
-         (name (alist-get 'name data))
-         (type (alist-get 'type data))
+(defun counsel-spotify--parse-playback-item (item)
+  (let* ((id (alist-get 'id item))
+         (name (alist-get 'name item))
+         (type (alist-get 'type item))
+         ;; If it's a podcast episode, ask user to confirm the episode or the show that user wants to save
+         (type (if (string-equal type "episode") (call-interactively #'counsel-spotify--ask-user-episode-or-show) type))
+         (id (if (string-equal type "show") (alist-get 'id (alist-get 'show item)) id))
+         (name (if (string-equal type "show") (alist-get 'name (alist-get 'show item)) name))
          (save-to (cond
                    ((string-equal type "track") "tracks")
-                   ((string-equal type "episode") "episodes")))
+                   ((string-equal type "episode") "episodes")
+                   ((string-equal type "show") "shows")))
+         (added-msg (concat "Added " "'" name "'" " (" type ")"  " to your library.")))
+    `((name . ,name)
+      (id . ,id)
+      (save-to . ,save-to)
+      (added-msg . ,added-msg))))
+
+(aio-defun counsel-spotify--save-current-playback-from-id-p (item)
+  (let* ((data (counsel-spotify--parse-playback-item item))
+         (id (alist-get 'id data))
+         (save-to (alist-get 'save-to data))
+         (added-msg (alist-get 'added-msg data))
          (url (concat counsel-spotify-spotify-api-url
                       "/me/"
                       save-to
                       "?ids="
                       id))
-         (result (aio-await (counsel-spotify-request-p url
-                                                       :type "PUT"
-                                                       :parser (lambda () (counsel-spotify--save-current-playback-parser (concat "Added " "'" name "'" " to your library.")))
-                                                       :headers `(("Content-Type" . "application/json")
-                                                                  ,(counsel-spotify-oauth2-auth-bearer))))))))
+         (result
+          (aio-await
+           (counsel-spotify-request-p url
+                                      :type "PUT"
+                                      :parser (lambda () (counsel-spotify--save-current-playback-request-parser added-msg))
+                                      :headers `(("Content-Type" . "application/json")
+                                                 ,(counsel-spotify-oauth2-auth-bearer))))))))
 
 (provide 'counsel-spotify-playback)
 ;;; counsel-spotify-playback.el ends here

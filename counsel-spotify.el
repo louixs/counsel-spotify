@@ -243,7 +243,7 @@
   (interactive)
   (funcall
    (aio-lambda ()
-     (let ((data (aio-await (counsel-spotify--get-current-playback-id-p))))
+     (let ((data (aio-await (counsel-spotify--get-current-playback-data-p))))
        (counsel-spotify--save-current-playback-from-id-p data)))))
 
 (provide 'counsel-spotify)
