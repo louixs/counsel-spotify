@@ -142,7 +142,6 @@
                 (aio-await (counsel-spotify-oauth2-fetch-by-type ,type))
                 :action #'counsel-spotify-play-string
                 :caller "")))) ;; If this is nil caller will be C-X-Counsel which will pollute the minibuffer results if ivy-rich-mode is on
-                
 
 ;;;###autoload
 (defun counsel-spotify-search-user-playlist ()
