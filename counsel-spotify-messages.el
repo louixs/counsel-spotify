@@ -20,8 +20,15 @@
 ;;; Commentary:
 ;; Functions to format different kind of Spotify objects (like tracks, albums, artists, etc.)
 ;;; Code:
-
 (require 'counsel-spotify-search)
+
+(defun counsel-spotify-format-duration (duration-in-ms)
+  (let* ((seconds-of-song (/ duration-in-ms 1000.0))
+         (second-left-in-song (% (round seconds-of-song) 60))
+         (minutes-in-song (truncate (/ seconds-of-song 60))))
+    (format "(%d:%0.2d)"
+            minutes-in-song
+            second-left-in-song)))
 
 (cl-defgeneric counsel-spotify-format (element)
   "Format an ELEMENT to be shown in the minibuffer.")
@@ -37,12 +44,9 @@
 
 (cl-defmethod counsel-spotify-format ((track counsel-spotify-track))
   "Format a TRACK Spotify object."
-  (let* ((seconds-of-song (/ (duration-in-ms track) 1000.0))
-         (second-left-in-song (% (round seconds-of-song) 60))
-         (minutes-in-song (truncate (/ seconds-of-song 60))))
-    (format "(%d:%0.2d) %s - %s [%s]"
-            minutes-in-song
-            second-left-in-song
+  (let* ((duration (counsel-spotify-format-duration (duration-in-ms track))))
+    (format "%s %s - %s [%s]"
+            duration
             (name (artist track))
             (name track)
             (name (album track)))))
@@ -53,7 +57,8 @@
 
 (cl-defmethod counsel-spotify-format ((episode counsel-spotify-episode))
   "Format an EPISODE Spotify object."
-  (format "%s | %s" (name episode) (description episode)))
+  (let* ((duration (counsel-spotify-format-duration (duration-in-ms  episode))))
+    (format "%s %s | [%s]" duration (name episode) (description episode))))
 
 (cl-defmethod counsel-spotify-format ((current-playback counsel-spotify-current-playback))
   "Format a PLAYBACK Spotify object."

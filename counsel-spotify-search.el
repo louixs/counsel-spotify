@@ -66,7 +66,8 @@
   ((publisher :initarg :publisher :initform "" :reader publisher)))
 
 (defclass counsel-spotify-episode (counsel-spotify-playable)
-  ((description :initarg :description :initform "" :reader description)))
+  ((description :initarg :description :initform "" :reader description)
+   (duration-in-ms :initarg :duration :initform 0 :reader duration-in-ms)))
 
 (defclass counsel-spotify-current-playback (counsel-spotify-non-playable)
   ((artist-name :initarg :artist-name :initform "" :reader artist-name)
@@ -103,8 +104,13 @@
   "Parse A-SPOTIFY-EPISODE-OBJECT of _TYPE episodes."
   (let ((name (alist-get 'name a-spotify-episode-object))
         (description (alist-get 'description a-spotify-episode-object))
-        (uri (alist-get 'uri a-spotify-episode-object)))
-    (make-instance 'counsel-spotify-episode :name name :uri uri :description description)))
+        (uri (alist-get 'uri a-spotify-episode-object))
+        (duration-in-ms (alist-get 'duration_ms a-spotify-episode-object)))
+    (make-instance 'counsel-spotify-episode
+                   :name name
+                   :uri uri
+                   :description description
+                   :duration duration-in-ms)))
 
 (cl-defmethod counsel-spotify-parse-spotify-object (a-spotify-track-object (_type (eql tracks)))
   "Parse A-SPOTIFY-TRACK-OBJECT of _TYPE track."
@@ -242,7 +248,7 @@
   (let ((search-type (mapconcat #'symbol-name type ",")))
     (cond
      ((string-equal search-type "user-playlist") (concat counsel-spotify-spotify-api-url "/me/playlists?limit=50"))
-     ((string-equal search-type "current-playback") (concat counsel-spotify-spotify-api-url "/me/player/currently-playing?additional_types=episode"))
+     ((string-equal search-type "current-playback") (concat counsel-spotify-spotify-api-url "/me/player/currently-playing?additional_types=track,episode"))
      ((string-equal search-type "new-releases") (concat counsel-spotify-spotify-api-url (concat "/browse/new-releases/?country=" counsel-spotify-new-releases-country)))
      ((string-equal search-type "top-artists") (concat counsel-spotify-spotify-api-url "/me/top/artists"))
      ((string-equal search-type "top-tracks") (concat counsel-spotify-spotify-api-url "/me/top/tracks"))
@@ -317,12 +323,6 @@
                    (error
                     (message "Oauth2 search retrieve error"))))
          (error-status (counsel-spotify-oauth2-api-error result)))
-    ;; (if error-status
-    ;;     (cond
-    ;;      ((= 401 error-status) (progn
-    ;;                              (message "error 401")
-    ;;                              (counsel-spotify-refresh-oauth-token-pkce)
-    ;;                              (counsel-spotify-oauth2-search-p rest)))))
     (counsel-spotify-oauth2-parse-response result category)))
 
 (provide 'counsel-spotify-search)
