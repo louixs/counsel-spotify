@@ -1,4 +1,4 @@
-;;; counsel-spotify-tracks.el --- Description -*- lexical-binding: t; -*-
+;;; counsel-spotify-playback.el --- Description -*- lexical-binding: t; -*-
 ;;
 ;;
 ;; Author: Ryuei Sasaki <https://github.com/louixs>
@@ -11,7 +11,6 @@
 ;;  Description
 ;;
 ;;; Code:
-(require 'dash)
 (require 'counsel-spotify-oauth)
 
 (defun counsel-spotify-oauth2-auth-bearer ()
@@ -23,8 +22,7 @@
                                                          :type "GET"
                                                          :headers `(("Content-Type" . "application/json")
                                                                     ,(counsel-spotify-oauth2-auth-bearer)))))
-                                                                    
-         (item (->> response (alist-get 'item)))
+         (item (alist-get 'item response))
          (id (alist-get 'id item))
          (type (alist-get 'type item))
          (name (alist-get 'name item)))
@@ -43,7 +41,7 @@
 
 (aio-defun counsel-spotify--save-current-playback-from-id-p (data)
   (let* ((id (alist-get 'id data))
-         (track-name (alist-get 'name data))
+         (name (alist-get 'name data))
          (type (alist-get 'type data))
          (save-to (cond
                    ((string-equal type "track") "tracks")
@@ -55,9 +53,9 @@
                       id))
          (result (aio-await (counsel-spotify-request-p url
                                                        :type "PUT"
-                                                       :parser (lambda () (counsel-spotify--save-current-playback-parser (concat "Added " "'" track-name "'" " to the Liked Songs playlist.")))
+                                                       :parser (lambda () (counsel-spotify--save-current-playback-parser (concat "Added " "'" name "'" " to your library.")))
                                                        :headers `(("Content-Type" . "application/json")
                                                                   ,(counsel-spotify-oauth2-auth-bearer))))))))
 
-(provide 'counsel-spotify-tracks)
-;;; counsel-spotify-tracks.el ends here
+(provide 'counsel-spotify-playback)
+;;; counsel-spotify-playback.el ends here

@@ -32,7 +32,7 @@
 (require 'counsel-spotify-backends)
 (require 'counsel-spotify-notifications)
 (require 'counsel-spotify-messages)
-(require 'counsel-spotify-tracks)
+(require 'counsel-spotify-playback)
 
 (defgroup  counsel-spotify nil
   "Customs for `counsel-spotify'"
