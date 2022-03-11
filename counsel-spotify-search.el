@@ -71,41 +71,43 @@
 
 (defclass counsel-spotify-current-playback (counsel-spotify-non-playable)
   ((artist-name :initarg :artist-name :initform "" :reader artist-name)
-   (album :initarg :album :initform "" :reader album)))
+   (album :initarg :album :initform "" :reader album)
+   (remaining-time-in-ms :initarg :remaining-time-in-ms :initform 0 :reader remaining-time-in-ms)))
 
 (defclass counsel-spotify-current-playback-episode (counsel-spotify-non-playable)
   ((show-name :initarg :show-name :initform "" :reader show-name)
-   (episode-description :initarg :episode-description :initform "" :reader episode-description)))
+   (episode-description :initarg :episode-description :initform "" :reader episode-description)
+   (remaining-time-in-ms :initarg :remaining-time-in-ms :initform 0 :reader remaining-time-in-ms)))
 
 (cl-defgeneric counsel-spotify-parse-spotify-object (a-spotify-object type)
   "Parse A-SPOTIFY-OBJECT knowing it has the type TYPE.")
 
 (cl-defmethod counsel-spotify-parse-spotify-object (spotify-object _type)
   "Parse a generic SPOTIFY-OBJECT of type _TYPE."
-  (let ((name (alist-get 'name spotify-object))
-        (uri (alist-get 'uri spotify-object)))
+  (let* ((name (alist-get 'name spotify-object))
+         (uri (alist-get 'uri spotify-object)))
     (make-instance 'counsel-spotify-playable :name name :uri uri)))
 
 (cl-defmethod counsel-spotify-parse-spotify-object (a-spotify-album-object (_type (eql albums)))
   "Parse A-SPOTIFY-ALBUM-OBJECT of _TYPE album."
-  (let ((name (alist-get 'name a-spotify-album-object))
-        (artist-name (alist-get 'name (elt (alist-get 'artists a-spotify-album-object) 0)))
-        (uri (alist-get 'uri a-spotify-album-object)))
+  (let* ((name (alist-get 'name a-spotify-album-object))
+         (artist-name (alist-get 'name (elt (alist-get 'artists a-spotify-album-object) 0)))
+         (uri (alist-get 'uri a-spotify-album-object)))
     (make-instance 'counsel-spotify-album :name name :uri uri :artist-name artist-name)))
 
 (cl-defmethod counsel-spotify-parse-spotify-object (a-spotify-show-object (_type (eql shows)))
   "Parse A-SPOTIFY-SHOW-OBJECT of _TYPE shows."
-  (let ((name (alist-get 'name a-spotify-show-object))
-        (publisher (alist-get 'publisher a-spotify-show-object))
-        (uri (alist-get 'uri a-spotify-show-object)))
+  (let* ((name (alist-get 'name a-spotify-show-object))
+         (publisher (alist-get 'publisher a-spotify-show-object))
+         (uri (alist-get 'uri a-spotify-show-object)))
     (make-instance 'counsel-spotify-show :name name :uri uri :publisher publisher)))
 
 (cl-defmethod counsel-spotify-parse-spotify-object (a-spotify-episode-object (_type (eql episodes)))
   "Parse A-SPOTIFY-EPISODE-OBJECT of _TYPE episodes."
-  (let ((name (alist-get 'name a-spotify-episode-object))
-        (description (alist-get 'description a-spotify-episode-object))
-        (uri (alist-get 'uri a-spotify-episode-object))
-        (duration-in-ms (alist-get 'duration_ms a-spotify-episode-object)))
+  (let* ((name (alist-get 'name a-spotify-episode-object))
+         (description (alist-get 'description a-spotify-episode-object))
+         (uri (alist-get 'uri a-spotify-episode-object))
+         (duration-in-ms (alist-get 'duration_ms a-spotify-episode-object)))
     (make-instance 'counsel-spotify-episode
                    :name name
                    :uri uri
@@ -114,11 +116,11 @@
 
 (cl-defmethod counsel-spotify-parse-spotify-object (a-spotify-track-object (_type (eql tracks)))
   "Parse A-SPOTIFY-TRACK-OBJECT of _TYPE track."
-  (let ((name (alist-get 'name a-spotify-track-object))
-        (uri (alist-get 'uri a-spotify-track-object))
-        (duration-in-ms (alist-get 'duration_ms a-spotify-track-object))
-        (main-artist (counsel-spotify-parse-spotify-object (elt (alist-get 'artists a-spotify-track-object) 0) 'artists))
-        (album (counsel-spotify-parse-spotify-object (alist-get 'album a-spotify-track-object) 'albums)))
+  (let* ((name (alist-get 'name a-spotify-track-object))
+         (uri (alist-get 'uri a-spotify-track-object))
+         (duration-in-ms (alist-get 'duration_ms a-spotify-track-object))
+         (main-artist (counsel-spotify-parse-spotify-object (elt (alist-get 'artists a-spotify-track-object) 0) 'artists))
+         (album (counsel-spotify-parse-spotify-object (alist-get 'album a-spotify-track-object) 'albums)))
     (make-instance 'counsel-spotify-track
                    :name name
                    :uri uri
@@ -145,16 +147,26 @@
     (alist-get 'album)
     (alist-get 'name)))
 
+(defun counsel-spotify-get-remaining-time-in-ms (currently-playing)
+  (let* ((progress-ms (alist-get 'progress_ms currently-playing))
+         (item (alist-get 'item currently-playing))
+         (duration-ms (alist-get 'duration_ms item))
+         (remaining-ms (- duration-ms progress-ms)))
+    remaining-ms))
+
 ;; for displaying information about current tunes that is not podcast/show episodes
 (cl-defmethod counsel-spotify-parse-spotify-object (a-spotify-current-playback-object (_type (eql current-playback)))
   "Parse a A-SPOTIFY-CURRENT-PLAYBACK-OBJECT of type _TYPE current-playback"
-  (let ((playback-name (alist-get 'name a-spotify-current-playback-object))
-        (artist-name (get-artist-name a-spotify-current-playback-object))
-        (album-name (get-album-name a-spotify-current-playback-object)))
+  (let* ((remaining-time-in-ms (counsel-spotify-get-remaining-time-in-ms a-spotify-current-playback-object))
+         (item (alist-get 'item a-spotify-current-playback-object))
+         (playback-name (alist-get 'name item))
+         (artist-name (get-artist-name item))
+         (album-name (get-album-name item)))
     (make-instance 'counsel-spotify-current-playback
                    :name playback-name
                    :artist-name artist-name
-                   :album album-name)))
+                   :album album-name
+                   :remaining-time-in-ms remaining-time-in-ms)))
 
 (defun get-episode-name (item)
   (->> item
@@ -171,13 +183,16 @@
 
 (cl-defmethod counsel-spotify-parse-spotify-object (a-spotify-current-playback-object (_type (eql current-playback-episode)))
   "Parse a A-SPOTIFY-CURRENT-PLAYBACK-OBJECT of type _TYPE current-playback-episode i.e. podcast episodes "
-   (let ((episode-name (get-episode-name a-spotify-current-playback-object))
-         (show-name (get-show-name a-spotify-current-playback-object))
-         (episode-description (get-episode-description a-spotify-current-playback-object)))
-     (make-instance 'counsel-spotify-current-playback-episode
-                    :name episode-name
-                    :show-name show-name
-                    :episode-description episode-description)))
+  (let* ((remaining-time-in-ms (counsel-spotify-get-remaining-time-in-ms a-spotify-current-playback-object))
+         (item (alist-get 'item a-spotify-current-playback-object))
+         (episode-name (get-episode-name item))
+         (show-name (get-show-name item))
+         (episode-description (get-episode-description item)))
+    (make-instance 'counsel-spotify-current-playback-episode
+                   :name episode-name
+                   :show-name show-name
+                   :episode-description episode-description
+                   :remaining-time-in-ms remaining-time-in-ms)))
 
 (defun counsel-spotify-parse-items (a-spotify-alist-response a-type)
   "Parse every item in A-SPOTIFY-ALIST-RESPONSE as being of the type A-TYPE."
@@ -191,10 +206,6 @@
    (lambda (category)
      (counsel-spotify-parse-items a-spotify-alist-response  (car category)))
    a-spotify-alist-response))
-
-(defun counsel-spotify-format-current-playback (a-spotify-alist-response a-type)
-  (let ((item (alist-get 'item a-spotify-alist-response)))
-    (counsel-spotify-parse-spotify-object item a-type)))
 
 (defun counsel-spotify-oauth2-parse-items (a-spotify-alist-response a-type)
   (let ((items (alist-get 'items a-spotify-alist-response)))
@@ -283,8 +294,8 @@
    ((eq category 'user-playlist) (counsel-spotify-oauth2-parse-items a-spotify-alist-response category))
    ;; data structure for playback is different if they are podcast episode
    ((playback-episode? a-spotify-alist-response category)
-    (counsel-spotify-format-current-playback a-spotify-alist-response 'current-playback-episode))
-   ((eq category 'current-playback) (counsel-spotify-format-current-playback a-spotify-alist-response 'current-playback))
+    (counsel-spotify-parse-spotify-object a-spotify-alist-response 'current-playback-episode))
+   ((eq category 'current-playback) (counsel-spotify-parse-spotify-object a-spotify-alist-response 'current-playback))
    ((eq category 'new-releases) (counsel-spotify-oauth2-parse-new-releases a-spotify-alist-response))
    ((eq category 'top-artists) (counsel-spotify-oauth2-parse-items a-spotify-alist-response 'artists))
    ((eq category 'top-tracks) (counsel-spotify-oauth2-parse-items a-spotify-alist-response 'tracks))

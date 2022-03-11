@@ -49,6 +49,14 @@
    Here is the list of scopes: https://developer.spotify.com/documentation/general/guides/scopes/"
   :type 'string :group 'counsel-spotify)
 
+(defun counsel-spotify-oauth2-auth-bearer ()
+  `("Authorization" . ,(concat "Bearer " (oauth2-token-access-token counsel-spotify-spotify-api-auth-token))))
+
+(defun counsel-spotify-oauth-bearer-headers ()
+ `(("Content-Type" . "application/json")
+   ,(counsel-spotify-oauth2-auth-bearer)))
+ 
+
 ;; moved from counsel-spotify-search
 (defun counsel-spotify-basic-auth-credentials ()
   "Return the Basic auth string that should be sent to ask for an auth token."

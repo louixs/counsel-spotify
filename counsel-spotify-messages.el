@@ -62,11 +62,20 @@
 
 (cl-defmethod counsel-spotify-format ((current-playback counsel-spotify-current-playback))
   "Format a PLAYBACK Spotify object."
-  (format "%s - %s (Artists) - %s (Album)" (name current-playback) (artist-name current-playback) (album current-playback)))
+  (let* ((remaining-time-in-ms (counsel-spotify-format-duration (remaining-time-in-ms current-playback))))
+    (format "%s - %s (Artists) - %s (Album) | %s (Remaining)"
+            (name current-playback)
+            (artist-name current-playback)
+            (album current-playback)
+            remaining-time-in-ms)))
 
 (cl-defmethod counsel-spotify-format ((current-playback counsel-spotify-current-playback-episode))
   "Format a EPISODE PLAYBACK Spotify object."
-  (format "%s - %s (Podcast)" (name current-playback) (show-name current-playback)))
+  (let* ((remaining-time-in-ms (counsel-spotify-format-duration (remaining-time-in-ms current-playback))))
+    (format "%s - %s (Podcast) | %s (Remaining)"
+            (name current-playback)
+            (show-name current-playback)
+            remaining-time-in-ms)))
 
 (provide 'counsel-spotify-messages)
 ;;; counsel-spotify-messages.el ends here

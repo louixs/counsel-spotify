@@ -12,9 +12,7 @@
 ;;
 ;;; Code:
 (require 'counsel-spotify-oauth)
-
-(defun counsel-spotify-oauth2-auth-bearer ()
-  `("Authorization" . ,(concat "Bearer " (oauth2-token-access-token counsel-spotify-spotify-api-auth-token))))
+(require 'counsel-spotify-search)
 
 (defun counsel-spotify--ask-user-episode-or-show (type)
   "Interactrively asks user to choose the type of item to save if because if it's a podcast episode, user can save the episode itself or the podcast show to their library.
@@ -28,8 +26,7 @@
   (let* ((url (concat counsel-spotify-spotify-api-url "/me/player/currently-playing?additional_types=track,episode"))
          (response (aio-await (counsel-spotify-request-p url
                                                          :type "GET"
-                                                         :headers `(("Content-Type" . "application/json")
-                                                                    ,(counsel-spotify-oauth2-auth-bearer)))))
+                                                         :headers (counsel-spotify-oauth-bearer-headers))))
          (item (alist-get 'item response)))
     item))
 
@@ -59,7 +56,7 @@
       (save-to . ,save-to)
       (added-msg . ,added-msg))))
 
-(aio-defun counsel-spotify--save-current-playback-from-id-p (item)
+(aio-defun counsel-spotify--save-current-playback (item)
   (let* ((data (counsel-spotify--parse-playback-item item))
          (id (alist-get 'id data))
          (save-to (alist-get 'save-to data))
@@ -74,8 +71,28 @@
            (counsel-spotify-request-p url
                                       :type "PUT"
                                       :parser (lambda () (counsel-spotify--save-current-playback-request-parser added-msg))
-                                      :headers `(("Content-Type" . "application/json")
-                                                 ,(counsel-spotify-oauth2-auth-bearer))))))))
+                                      :headers (counsel-spotify-oauth-bearer-headers)))))))
+
+(aio-defun counsel-spotify-get-current-playback-state ()
+  (aio-await (counsel-spotify-request-p (concat counsel-spotify-spotify-api-url "/me/player")
+                                        :type "GET"
+                                        :parser #'json-read
+                                        :headers (counsel-spotify-oauth-bearer-headers))))
+
+(aio-defun counsel-spotify-get-currently-playing ()
+  (aio-await (counsel-spotify-request-p (concat counsel-spotify-spotify-api-url "/me/player/currently-playing?additional_types=episode")
+                                        :type "GET"
+                                        :parser #'json-read
+                                        :headers (counsel-spotify-oauth-bearer-headers))))
+
+;; show current playback
+(aio-defun counsel-spotify-get-current-playback-info ()
+  (let* ((currently-playing (aio-await (counsel-spotify-get-currently-playing))))
+    (counsel-spotify-oauth2-parse-response currently-playing 'current-playback)))
+
+    
+   
+    
 
 (provide 'counsel-spotify-playback)
 ;;; counsel-spotify-playback.el ends here

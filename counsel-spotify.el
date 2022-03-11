@@ -188,7 +188,7 @@
   (counsel-spotify-verify-credentials)
   (funcall
    (aio-lambda ()
-     (let ((data (aio-await (counsel-spotify-oauth2-search-p "" :type '(current-playback)))))
+     (let ((data (aio-await (counsel-spotify-get-current-playback-info))))
        (message (counsel-spotify-format data))))))
 
 ;;;###autoload
@@ -243,7 +243,7 @@
   (funcall
    (aio-lambda ()
      (let ((data (aio-await (counsel-spotify--get-current-playback-data-p))))
-       (counsel-spotify--save-current-playback-from-id-p data)))))
+       (counsel-spotify--save-current-playback data)))))
 
 (provide 'counsel-spotify)
 ;;; counsel-spotify.el ends here
