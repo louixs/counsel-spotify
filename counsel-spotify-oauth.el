@@ -53,7 +53,7 @@
   (let* ((token (aio-await (counsel-spotify-oauth-fetch-token-pkce-p))))
     `("Authorization" . ,(concat "Bearer " (oauth2-token-access-token token)))))
 
-(aio-defun counsel-spotify-oauth-bearer-headers ()
+(aio-defun counsel-spotify-oauth-bearer-headers-p ()
   (let* ((bearer (aio-await (counsel-spotify-oauth2-auth-bearer-p))))
     `(("Content-Type" . "application/json")
       ,bearer)))
