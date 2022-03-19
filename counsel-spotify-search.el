@@ -336,5 +336,13 @@
          (error-status (counsel-spotify-oauth2-api-error result)))
     (counsel-spotify-oauth2-parse-response result category)))
 
+(aio-defun counsel-spotify-oauth2-search-new-p (&rest rest)
+  (let* ((query-url (apply #'counsel-spotify-oauth2-make-query rest))
+         (category (get-last-element rest))
+         (result (aio-await (counsel-spotify-request-p query-url
+                                                      :type "GET"
+                                                      :headers (counsel-spotify-oauth-bearer-headers)))))
+    (counsel-spotify-oauth2-parse-response result category)))
+
 (provide 'counsel-spotify-search)
 ;;; counsel-spotify-search.el ends here

@@ -95,10 +95,12 @@
 ;; oauth2
 (defmacro counsel-spotify-oauth2-search-by (&rest search-args)
   `(lambda (search-term)
-     (funcall
-      (aio-lambda ()
-        (let ((result (aio-await (counsel-spotify-oauth2-search-p search-term ,@search-args))))
-          (counsel-spotify-update-ivy-candidates result))))
+     ;; only run when search-term is not empty
+     (when (not (string-empty-p search-term))
+       (funcall
+        (aio-lambda ()
+          (let ((result (aio-await (counsel-spotify-oauth2-search-new-p search-term ,@search-args))))
+            (counsel-spotify-update-ivy-candidates result)))))
      0))
 
 (aio-defun counsel-spotify-oauth2-fetch-by-type (type)

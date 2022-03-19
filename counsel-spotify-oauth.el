@@ -49,13 +49,13 @@
    Here is the list of scopes: https://developer.spotify.com/documentation/general/guides/scopes/"
   :type 'string :group 'counsel-spotify)
 
-(defun counsel-spotify-oauth2-auth-bearer ()
-  `("Authorization" . ,(concat "Bearer " (oauth2-token-access-token counsel-spotify-spotify-api-auth-token))))
+(aio-defun counsel-spotify-oauth2-auth-bearer ()
+  (let* ((token (aio-await (counsel-spotify-oauth-fetch-token-pkce-p))))
+    `("Authorization" . ,(concat "Bearer " (oauth2-token-access-token token)))))
 
 (defun counsel-spotify-oauth-bearer-headers ()
  `(("Content-Type" . "application/json")
    ,(counsel-spotify-oauth2-auth-bearer)))
- 
 
 ;; moved from counsel-spotify-search
 (defun counsel-spotify-basic-auth-credentials ()
@@ -239,6 +239,35 @@
   Returns an aio-promise."
  (let ((promise (aio-promise)))
    (prog1 promise
+     (request url
+       :type type
+       :headers headers
+       :data data
+       :parser parser
+       :success (cl-function
+                 (lambda (&key data &allow-other-keys)
+                   (aio-resolve promise (lambda () data))))
+       :status-code '((400 . (lambda (&rest _)
+                               (message "Got 400 error.")))
+                      (401 . (lambda (url data type headers parser &rest _)
+                               (message "Got 401 error.")
+                               (counsel-spotify-refresh-oauth-token-pkce)
+                               (counsel-spotify-request-p url :data data
+                                                              :type type
+                                                              :headers headers
+                                                              :parser parser))))))))
+                               
+
+(cl-defun counsel-spotify-request-p-original (url
+                                              &key
+                                              data
+                                              type
+                                              headers
+                                              (parser #'json-read))
+  "Make a non-blocking request to URL.
+  Returns an aio-promise."
+ (let ((promise (aio-promise)))
+   (prog1 promise
      (condition-case error
        (request url
          :type type
@@ -254,6 +283,7 @@
        (error (aio-resolve promise
                            (lambda ()
                              (signal (car error) (cdr error)))))))))
+
 
 (defun counsel-spotify-oauth2-make-access-request (url data)
   "Make a non-blocking access request to URL using DATA in POST.
