@@ -49,13 +49,14 @@
    Here is the list of scopes: https://developer.spotify.com/documentation/general/guides/scopes/"
   :type 'string :group 'counsel-spotify)
 
-(aio-defun counsel-spotify-oauth2-auth-bearer ()
+(aio-defun counsel-spotify-oauth2-auth-bearer-p ()
   (let* ((token (aio-await (counsel-spotify-oauth-fetch-token-pkce-p))))
     `("Authorization" . ,(concat "Bearer " (oauth2-token-access-token token)))))
 
-(defun counsel-spotify-oauth-bearer-headers ()
- `(("Content-Type" . "application/json")
-   ,(counsel-spotify-oauth2-auth-bearer)))
+(aio-defun counsel-spotify-oauth-bearer-headers ()
+  (let* ((bearer (aio-await (counsel-spotify-oauth2-auth-bearer-p))))
+    `(("Content-Type" . "application/json")
+      ,bearer)))
 
 ;; moved from counsel-spotify-search
 (defun counsel-spotify-basic-auth-credentials ()

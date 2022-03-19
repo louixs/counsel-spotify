@@ -26,7 +26,7 @@
   (let* ((url (concat counsel-spotify-spotify-api-url "/me/player/currently-playing?additional_types=track,episode"))
          (response (aio-await (counsel-spotify-request-p url
                                                          :type "GET"
-                                                         :headers (counsel-spotify-oauth-bearer-headers))))
+                                                         :headers (aio-await (counsel-spotify-oauth-bearer-headers-p)))))
          (item (alist-get 'item response)))
     item))
 
@@ -71,19 +71,19 @@
            (counsel-spotify-request-p url
                                       :type "PUT"
                                       :parser (lambda () (counsel-spotify--save-current-playback-request-parser added-msg))
-                                      :headers (counsel-spotify-oauth-bearer-headers)))))))
+                                      :headers (aio-await (counsel-spotify-oauth-bearer-headers-p))))))))
 
 (aio-defun counsel-spotify-get-current-playback-state ()
   (aio-await (counsel-spotify-request-p (concat counsel-spotify-spotify-api-url "/me/player")
                                         :type "GET"
                                         :parser #'json-read
-                                        :headers (counsel-spotify-oauth-bearer-headers))))
+                                        :headers (aio-await (counsel-spotify-oauth-bearer-headers-p)))))
 
 (aio-defun counsel-spotify-get-currently-playing ()
   (aio-await (counsel-spotify-request-p (concat counsel-spotify-spotify-api-url "/me/player/currently-playing?additional_types=episode")
                                         :type "GET"
                                         :parser #'json-read
-                                        :headers (counsel-spotify-oauth-bearer-headers))))
+                                        :headers (aio-await (counsel-spotify-oauth-bearer-headers-p)))))
 
 ;; show current playback
 (aio-defun counsel-spotify-get-current-playback-info ()
