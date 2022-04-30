@@ -370,12 +370,6 @@ TOKEN should be obtained with `oauth2-request-access'."
                        "&refresh_token=" (url-hexify-string (oauth2-token-refresh-token token))
                        "&grant_type=refresh_token"))
          (access-token (aio-await (counsel-spotify-oauth2-make-access-request url data))))
-    (message "access pkce")
-    (message "url: %s" url)
-    (message "data")
-    (print data)
-    (message "access token")
-    (print access-token)
     (setf (oauth2-token-access-token token) (alist-get 'access_token access-token))
     ;; need to renew refresh token as well when using pkce flow for spotify api
     ;; https://community.spotify.com/t5/Spotify-for-Developers/Refresh-token-revoked/td-p/5190755
