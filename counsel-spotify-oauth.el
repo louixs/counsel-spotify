@@ -238,7 +238,7 @@
                                      (parser #'json-read))
   "Make a non-blocking request to URL.
   Returns an aio-promise."
- (let ((promise (aio-promise)))
+ (lexical-let* ((promise (aio-promise)))
    (prog1 promise
      (request url
        :type type
@@ -248,16 +248,14 @@
        :success (cl-function
                  (lambda (&key data &allow-other-keys)
                    (aio-resolve promise (lambda () data))))
-       :status-code '((400 . (lambda (&rest _)
-                               (message "Got 400 error.")))
-                      (401 . (lambda (url data type headers parser &rest _)
-                               (message "Got 401 error.")
-                               (counsel-spotify-refresh-oauth-token-pkce)
-                               (counsel-spotify-request-p url :data data
-                                                              :type type
-                                                              :headers headers
-                                                              :parser parser))))))))
-                               
+       :error (cl-function
+               (lambda (&rest args &key error-thrown &allow-other-keys)
+                ;;(message "Error :%S" error-thrown)
+                ;;(print args)
+                (if (consp error-thrown)
+                  (aio-resolve promise (lambda () (car (cdr (cdr error-thrown)))))
+                  (aio-resolve promise (lambda () error-thrown)))))))))
+       
 
 (cl-defun counsel-spotify-request-p-original (url
                                               &key
@@ -373,6 +371,11 @@ TOKEN should be obtained with `oauth2-request-access'."
                        "&grant_type=refresh_token"))
          (access-token (aio-await (counsel-spotify-oauth2-make-access-request url data))))
     (message "access pkce")
+    (message "url: %s" url)
+    (message "data")
+    (print data)
+    (message "access token")
+    (print access-token)
     (setf (oauth2-token-access-token token) (alist-get 'access_token access-token))
     ;; need to renew refresh token as well when using pkce flow for spotify api
     ;; https://community.spotify.com/t5/Spotify-for-Developers/Refresh-token-revoked/td-p/5190755
@@ -396,7 +399,9 @@ TOKEN should be obtained with `oauth2-request-access'."
   (let* ((token (aio-await (counsel-spotify-oauth-fetch-token-pkce-p)))
          (refreshed-token (aio-await (counsel-spotify-oauth2-refresh-access-pkce token))))
     (setq counsel-spotify-spotify-api-auth-token refreshed-token)
-    (message "Finished refreshing oauth token.")))
+    (message "Finished refreshing oauth token.")
+    refreshed-token))
+    
 
 (aio-defun counsel-spotify-reset-oauth-token-pkce ()
   "Lets you re-do the authentication and re-fetch auth code from Spotify API in case

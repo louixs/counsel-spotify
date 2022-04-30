@@ -256,7 +256,8 @@
 (cl-defun counsel-spotify-oauth2-make-query (search-term &key type filter)
   "Make a Spotify query to search for TERM of type TYPE with a FILTER."
   (when (null type) (error "Must supply a type of object to search for"))
-  (let ((search-type (mapconcat #'symbol-name type ",")))
+  (let* ((search-type (mapconcat #'symbol-name type ","))
+         (url-safe-search-term (url-encode-url search-term)))
     (cond
      ((string-equal search-type "user-playlist") (concat counsel-spotify-spotify-api-url "/me/playlists?limit=50"))
      ((string-equal search-type "current-playback") (concat counsel-spotify-spotify-api-url "/me/player/currently-playing?additional_types=track,episode"))
@@ -265,7 +266,7 @@
      ((string-equal search-type "top-tracks") (concat counsel-spotify-spotify-api-url "/me/top/tracks"))
      (t (format "%s/search?q=%s&type=%s"
                 counsel-spotify-spotify-api-url
-                (if filter (format "%s:%s" filter search-term) search-term)
+                (if filter (format "%s:%s" filter url-safe-search-term) url-safe-search-term)
                 search-type)))))
 
 (cl-defun counsel-spotify-search (a-callback &rest rest)
@@ -337,6 +338,24 @@
     (counsel-spotify-oauth2-parse-response result category)))
 
 (aio-defun counsel-spotify-oauth2-search-new-p (&rest rest)
+  (let* ((query-url (apply #'counsel-spotify-oauth2-make-query rest))
+         (category (get-last-element rest))
+         (result (aio-await (counsel-spotify-request-p query-url
+                                                       :type "GET"
+                                                       :headers (aio-await (counsel-spotify-oauth-bearer-headers-p))))))
+    (if (eq result 401)
+        (progn
+          (message "refresh")
+          (aio-await (counsel-spotify-refresh-oauth-token-pkce))
+          (message "refreshed")
+          (counsel-spotify-oauth2-parse-response
+           (aio-await (counsel-spotify-request-p-recur query-url
+                       :type "GET"
+                       :headers (aio-await (counsel-spotify-oauth-bearer-headers-p))))
+           category))
+      (counsel-spotify-oauth2-parse-response result category))))
+
+(aio-defun counsel-spotify-oauth2-search-new-p-bu (&rest rest)
   (let* ((query-url (apply #'counsel-spotify-oauth2-make-query rest))
          (category (get-last-element rest))
          (result (aio-await (counsel-spotify-request-p query-url
