@@ -342,6 +342,7 @@
          (category (get-last-element rest))
          (result (aio-await (counsel-spotify-request-p query-url
                                                        :type "GET"
+                                                       :encoding 'binary ;; temporal workaround to make special chars display work
                                                        :headers (aio-await (counsel-spotify-oauth-bearer-headers-p))))))
     (counsel-spotify-oauth2-parse-response result category)))
 
