@@ -264,33 +264,6 @@
          (aio-await (--counsel-spotify-request-p rest))))
       result)))
 
-(cl-defun counsel-spotify-request-p-original (url
-                                              &key
-                                              data
-                                              type
-                                              headers
-                                              (parser #'json-read))
-  "Make a non-blocking request to URL.
-  Returns an aio-promise."
- (let ((promise (aio-promise)))
-   (prog1 promise
-     (condition-case error
-       (request url
-         :type type
-         :headers headers
-         :data data
-         :parser parser
-         :success (cl-function
-                   (lambda (&key data &allow-other-keys)
-                     (aio-resolve promise (lambda () data))))
-         :error (cl-function
-                 (lambda (&rest args &key error &allow-other-keys)
-                   (signal (car error) (cdr error)))))
-       (error (aio-resolve promise
-                           (lambda ()
-                             (signal (car error) (cdr error)))))))))
-
-
 (defun counsel-spotify-oauth2-make-access-request (url data)
   "Make a non-blocking access request to URL using DATA in POST.
   Returns aio-promise."
