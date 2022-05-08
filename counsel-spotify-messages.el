@@ -55,6 +55,10 @@
   "Format an ALBUM Spotify object."
   (format "%s - %s" (artist-name album) (name album)))
 
+(cl-defmethod counsel-spotify-format ((show counsel-spotify-show))
+  "Format a SHOW Spotify object."
+  (format "%s | %s" (name show) (publisher show)))
+
 (cl-defmethod counsel-spotify-format ((episode counsel-spotify-episode))
   "Format an EPISODE Spotify object."
   (let* ((duration (counsel-spotify-format-duration (duration-in-ms  episode))))
