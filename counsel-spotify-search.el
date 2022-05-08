@@ -224,35 +224,6 @@
 (defun counsel-spotify-oauth2-parse-new-releases (response)
   (counsel-spotify-oauth2-parse-items (alist-get 'albums response) 'album))
 
-(cl-defmacro counsel-spotify-with-auth-token ((auth-variable) &body body)
-  "Execute with AUTH-VARIABLE bound to the Spotify's auth token for the current user the BODY."
-  `(let ((url-request-method "POST")
-         (url-request-data "&grant_type=client_credentials")
-         (url-request-extra-headers (list (cons "Content-Type" "application/x-www-form-urlencoded")
-                                          (cons "Authorization" (counsel-spotify-basic-auth-credentials)))))
-     (url-retrieve counsel-spotify-spotify-api-authentication-url
-                   (lambda (_status)
-                     (goto-char url-http-end-of-headers)
-                     (let ((,auth-variable (alist-get 'access_token (json-read))))
-                       ,@body)))))
-
-(cl-defmacro counsel-spotify-with-query-results ((auth-token query-url results-variable) &body body)
-  "Execute the BODY with the results of an api call to QUERY-URL with an AUTH-TOKEN bound to RESULTS-VARIABLE."
-  `(let ((url-request-extra-headers (list (cons "Authorization" (concat "Bearer " ,auth-token)))))
-     (url-retrieve ,query-url
-                   (lambda (_status)
-                     (goto-char url-http-end-of-headers)
-                     (let ((,results-variable (json-read)))
-                       ,@body)))))
-
-(cl-defun counsel-spotify-make-query (search-term &key type filter)
-  "Make a Spotify query to search counsel-spotify-parse-itemsfor TERM of type TYPE with a FILTER."
-  (when (null type) (error "Must supply a type of object to search for"))
-  (format "%s/search?q=%s&type=%s"
-          counsel-spotify-spotify-api-url
-          (if filter (format "%s:%s" filter search-term) search-term)
-          (mapconcat #'symbol-name type ",")))
-
 (cl-defun counsel-spotify-oauth2-make-query (search-term &key type filter)
   "Make a Spotify query to search for TERM of type TYPE with a FILTER."
   (when (null type) (error "Must supply a type of object to search for"))
@@ -268,13 +239,6 @@
                 counsel-spotify-spotify-api-url
                 (if filter (format "%s:%s" filter url-safe-search-term) url-safe-search-term)
                 search-type)))))
-
-(cl-defun counsel-spotify-search (a-callback &rest rest)
-  "Call A-CALLBACK with the parsed result of the query described by REST."
-  (let ((query-url (apply #'counsel-spotify-make-query rest)))
-    (counsel-spotify-with-auth-token (auth-token)
-      (counsel-spotify-with-query-results (auth-token query-url results)
-        (funcall a-callback (counsel-spotify-parse-response results))))))
 
 (defun counsel-spotify-get-playback-type (response)
   (->> response
@@ -327,17 +291,6 @@
       status)))
 
 (aio-defun counsel-spotify-oauth2-search-p (&rest rest)
-  (let* ((query-url (apply #'counsel-spotify-oauth2-make-query rest))
-         (token (aio-await (counsel-spotify-oauth-fetch-token-pkce-p)))
-         (category (get-last-element rest))
-         (result (condition-case err
-                   (aio-await (counsel-spotify-oauth2-url-retrieve-p token query-url))
-                   (error
-                    (message "Oauth2 search retrieve error"))))
-         (error-status (counsel-spotify-oauth2-api-error result)))
-    (counsel-spotify-oauth2-parse-response result category)))
-
-(aio-defun counsel-spotify-oauth2-search-new-p (&rest rest)
   (let* ((query-url (apply #'counsel-spotify-oauth2-make-query rest))
          (category (get-last-element rest))
          (result (aio-await (counsel-spotify-request-p query-url

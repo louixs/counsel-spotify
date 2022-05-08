@@ -86,12 +86,6 @@
   "Tell Ivy to update the minibuffer candidates with the LIST-OF-COUNSEL-SPOTIFY-OBJECTS."
   (ivy-update-candidates (mapcar #'counsel-spotify-format list-of-counsel-spotify-objects)))
 
-(defmacro counsel-spotify-search-by (&rest search-args)
-  "Create the function to search by SEARCH-KEYWORD and other SEARCH-ARGS."
-  `(lambda (search-term)
-     (counsel-spotify-search #'counsel-spotify-update-ivy-candidates search-term ,@search-args)
-     0))
-
 ;; oauth2
 (defmacro counsel-spotify-oauth2-search-by (&rest search-args)
   `(lambda (search-term)
@@ -99,7 +93,7 @@
      (when (not (string-empty-p search-term))
        (funcall
         (aio-lambda ()
-          (let ((result (aio-await (counsel-spotify-oauth2-search-new-p search-term ,@search-args))))
+          (let ((result (aio-await (counsel-spotify-oauth2-search-p search-term ,@search-args))))
             (counsel-spotify-update-ivy-candidates result)))))
      0))
 
@@ -112,7 +106,8 @@
   "Bring Ivy frontend to choose and play a track."
   (interactive)
   (counsel-spotify-verify-credentials)
-  (ivy-read "Search track: " (counsel-spotify-search-by :type '(track))
+  (ivy-read "Search track: "
+            (counsel-spotify-oauth2-search-by :type '(track))
             :dynamic-collection t
             :action '(1
                       ("p" counsel-spotify-play-string "Play track")
@@ -124,14 +119,20 @@
   "Bring Ivy frontend to choose and play an artist."
   (interactive)
   (counsel-spotify-verify-credentials)
-  (ivy-read "Search artist: " (counsel-spotify-search-by :type '(artist)) :dynamic-collection t :action #'counsel-spotify-play-string))
+  (ivy-read "Search artist: "
+            (counsel-spotify-oauth2-search-by :type '(artist))
+            :dynamic-collection t
+            :action #'counsel-spotify-play-string))
 
 ;;;###autoload
 (defun counsel-spotify-search-playlist ()
   "Bring Ivy frontend to choose and play a playlist."
   (interactive)
   (counsel-spotify-verify-credentials)
-  (ivy-read "Search playlist: " (counsel-spotify-search-by :type '(playlist)) :dynamic-collection t :action #'counsel-spotify-play-string))
+  (ivy-read "Search playlist: "
+            (counsel-spotify-oauth2-search-by :type '(playlist))
+            :dynamic-collection t
+            :action #'counsel-spotify-play-string))
 
 (defmacro counsel-spotify-async-fetch-read-by-type (prompt type)
   "Asynchronously fetch from spotify api and feed the results into ivy read.
@@ -198,21 +199,30 @@
   "Bring Ivy frontend to choose and play an album."
   (interactive)
   (counsel-spotify-verify-credentials)
-  (ivy-read "Search album: " (counsel-spotify-search-by :type '(album)) :dynamic-collection t :action #'counsel-spotify-play-string))
+  (ivy-read "Search album: "
+            (counsel-spotify-oauth2-search-by :type '(album))
+            :dynamic-collection t
+            :action #'counsel-spotify-play-string))
 
 ;;;###autoload
 (defun counsel-spotify-search-tracks-by-artist ()
   "Bring Ivy frontend to search for all tracks for a given artist."
   (interactive)
   (counsel-spotify-verify-credentials)
-  (ivy-read "Search tracks by artist: " (counsel-spotify-search-by :filter 'artist :type '(track)) :dynamic-collection t :action #'counsel-spotify-play-string))
+  (ivy-read "Search tracks by artist: "
+            (counsel-spotify-oauth2-search-by :filter 'artist :type '(track))
+            :dynamic-collection t
+            :action #'counsel-spotify-play-string))
 
 ;;;###autoload
 (defun counsel-spotify-search-tracks-by-album ()
   "Bring Ivy frontend to search for all track on a given album."
   (interactive)
   (counsel-spotify-verify-credentials)
-  (ivy-read "Search tracks by album: " (counsel-spotify-search-by :filter 'album :type '(track)) :dynamic-collection t :action #'counsel-spotify-play-string))
+  (ivy-read "Search tracks by album: "
+            (counsel-spotify-oauth2-search-by :filter 'album :type '(track))
+            :dynamic-collection t
+            :action #'counsel-spotify-play-string))
 
 ;;;###autoload
 (defun counsel-spotify-search-podcasts ()
