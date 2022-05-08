@@ -345,9 +345,8 @@
                                                        :headers (aio-await (counsel-spotify-oauth-bearer-headers-p))))))
     (if (eq result 401)
         (progn
-          (message "refresh")
+          (message "Got 401.")
           (aio-await (counsel-spotify-refresh-oauth-token-pkce))
-          (message "refreshed")
           (counsel-spotify-oauth2-parse-response
            (aio-await (counsel-spotify-request-p-recur query-url
                        :type "GET"
