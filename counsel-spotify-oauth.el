@@ -230,32 +230,39 @@
                           (if scope (concat "&scope=" (url-hexify-string scope)) "")
                           (if state (concat "&state=" (url-hexify-string state)) ""))))))
 
-(cl-defun counsel-spotify-request-p (url
-                                     &key
-                                     data
-                                     type
-                                     headers
-                                     (parser #'json-read))
+(cl-defun -counsel-spotify-request-p (url
+                                      &key
+                                      data
+                                      type
+                                      headers
+                                      (parser #'json-read))
   "Make a non-blocking request to URL.
   Returns an aio-promise."
  (lexical-let* ((promise (aio-promise)))
    (prog1 promise
-     (request url
-       :type type
-       :headers headers
-       :data data
-       :parser parser
-       :success (cl-function
-                 (lambda (&key data &allow-other-keys)
-                   (aio-resolve promise (lambda () data))))
-       :error (cl-function
-               (lambda (&rest args &key error-thrown &allow-other-keys)
-                ;;(message "Error :%S" error-thrown)
-                ;;(print args)
-                (if (consp error-thrown)
-                  (aio-resolve promise (lambda () (car (cdr (cdr error-thrown)))))
-                  (aio-resolve promise (lambda () error-thrown)))))))))
-       
+    (request url
+      :type type
+      :headers headers
+      :data data
+      :parser parser
+      :success (cl-function
+                (lambda (&key data &allow-other-keys)
+                  (aio-resolve promise (lambda () data))))
+      :error (cl-function
+              (lambda (&rest args &key error-thrown &allow-other-keys)
+               (if (consp error-thrown)
+                 (aio-resolve promise (lambda () (car (cdr (cdr error-thrown)))))
+                 (aio-resolve promise (lambda () error-thrown)))))))))
+
+(aio-defun counsel-spotify-request-p (&rest rest)
+  (let* ((result (aio-await (apply #'-counsel-spotify-request-p rest))))
+    (if (eq result 401)
+      (progn
+        (message "Got 401.")
+        (aio-await (counsel-spotify-refresh-oauth-token-pkce))
+        (counsel-spotify-oauth2-parse-responsen
+         (aio-await (--counsel-spotify-request-p rest))))
+      result)))
 
 (cl-defun counsel-spotify-request-p-original (url
                                               &key

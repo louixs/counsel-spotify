@@ -343,6 +343,14 @@
          (result (aio-await (counsel-spotify-request-p query-url
                                                        :type "GET"
                                                        :headers (aio-await (counsel-spotify-oauth-bearer-headers-p))))))
+    (counsel-spotify-oauth2-parse-response result category)))
+
+(aio-defun counsel-spotify-oauth2-search-new-p-bu-2 (&rest rest)
+  (let* ((query-url (apply #'counsel-spotify-oauth2-make-query rest))
+         (category (get-last-element rest))
+         (result (aio-await (counsel-spotify-request-p query-url
+                                                       :type "GET"
+                                                       :headers (aio-await (counsel-spotify-oauth-bearer-headers-p))))))
     (if (eq result 401)
         (progn
           (message "Got 401.")
