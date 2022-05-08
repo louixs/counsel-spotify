@@ -235,6 +235,7 @@
                                       data
                                       type
                                       headers
+                                      (encoding 'utf-8)
                                       (parser #'json-read))
   "Make a non-blocking request to URL.
   Returns an aio-promise."
@@ -245,6 +246,7 @@
       :headers headers
       :data data
       :parser parser
+      :encoding encoding
       :success (cl-function
                 (lambda (&key data &allow-other-keys)
                   (aio-resolve promise (lambda () data))))
