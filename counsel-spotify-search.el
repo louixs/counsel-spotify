@@ -82,10 +82,10 @@
 (cl-defgeneric counsel-spotify-parse-spotify-object (a-spotify-object type)
   "Parse A-SPOTIFY-OBJECT knowing it has the type TYPE.")
 
-(cl-defmethod counsel-spotify-parse-spotify-object (spotify-object _type)
+(cl-defmethod counsel-spotify-parse-spotify-object (a-spotify-object _type)
   "Parse a generic SPOTIFY-OBJECT of type _TYPE."
-  (let* ((name (alist-get 'name spotify-object))
-         (uri (alist-get 'uri spotify-object)))
+  (let* ((name (alist-get 'name a-spotify-object))
+         (uri (alist-get 'uri a-spotify-object)))
     (make-instance 'counsel-spotify-playable :name name :uri uri)))
 
 (cl-defmethod counsel-spotify-parse-spotify-object (a-spotify-album-object (_type (eql albums)))
