@@ -263,7 +263,7 @@
         (message "Got 401.")
         (aio-await (counsel-spotify-refresh-oauth-token-pkce))
         (counsel-spotify-oauth2-parse-response
-         (aio-await (-counsel-spotify-request-p rest))))
+         (aio-await (apply #'-counsel-spotify-request-p rest))))
       result)))
 
 (defun counsel-spotify-oauth2-make-access-request (url data)
