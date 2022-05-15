@@ -98,8 +98,9 @@
      0))
 
 (aio-defun counsel-spotify-oauth2-fetch-by-type (type)
-  (mapcar #'counsel-spotify-format
-          (aio-await (counsel-spotify-oauth2-search-p "" :type type))))
+  (let* ((result (aio-await (counsel-spotify-oauth2-search-p "" :type type))))
+    (mapcar #'counsel-spotify-format result)))
+          
 
 ;;;###autoload
 (defun counsel-spotify-search-track ()
@@ -134,7 +135,7 @@
             :dynamic-collection t
             :action #'counsel-spotify-play-string))
 
-(defmacro counsel-spotify-async-fetch-read-by-type (prompt type)
+(defmacro counsel-spotify-async-fetch-read-by-type-bu (prompt type)
   "Asynchronously fetch from spotify api and feed the results into ivy read.
    Use this for APIs that give you static result i.e. most of the APIs other than search.
    We want to avoid synchronous operations using aio-wait-for or url-retrive-synchronous because it can lock up emacs
@@ -145,6 +146,17 @@
                 (aio-await (counsel-spotify-oauth2-fetch-by-type ,type))
                 :action #'counsel-spotify-play-string
                 :caller "")))) ;; If this is nil caller will be C-X-Counsel which will pollute the minibuffer results if ivy-rich-mode is on
+
+(defmacro counsel-spotify-async-fetch-read-by-type (prompt type)
+  "Asynchronously fetch from spotify api and feed the results into ivy read.
+   Use this for APIs that give you static result i.e. most of the APIs other than search.
+   We want to avoid synchronous operations using aio-wait-for or url-retrive-synchronous because it can lock up emacs
+   randomly resulting in a lot of frustrations."
+  `(aio-with-async
+    (ivy-read ,prompt
+              (aio-await (counsel-spotify-oauth2-fetch-by-type ,type))
+              :action #'counsel-spotify-play-string
+              :caller ""))) ;; If this is nil caller will be C-X-Counsel which will pollute the minibuffer results if ivy-rich-mode is on
 
 ;;;###autoload
 (defun counsel-spotify-search-user-playlist ()
@@ -159,6 +171,7 @@
   ;; we don't need to call the API everytime we enter the search-term
   (counsel-spotify-async-fetch-read-by-type "Search user playlist: "
                                             '(user-playlist)))
+
 
 ;;;###autoload
 (defun counsel-spotify-new-releases ()

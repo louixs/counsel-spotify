@@ -239,7 +239,7 @@
                                       (parser #'json-read))
   "Make a non-blocking request to URL.
   Returns an aio-promise."
- (lexical-let* ((promise (aio-promise)))
+ (let* ((promise (aio-promise)))
    (prog1 promise
     (request url
       :type type
@@ -252,19 +252,38 @@
                   (aio-resolve promise (lambda () data))))
       :error (cl-function
               (lambda (&rest args &key error-thrown &allow-other-keys)
-               (if (consp error-thrown)
-                 (aio-resolve promise (lambda () (car (cdr (cdr error-thrown)))))
-                 (aio-resolve promise (lambda () error-thrown)))))))))
+                (let ((p promise))
+                  (if (consp error-thrown)
+                      (aio-resolve p (lambda () (car (cdr (cdr error-thrown)))))
+                      (aio-resolve p (lambda () error-thrown))))))))))
 
-(aio-defun counsel-spotify-request-p (&rest rest)
-  (let* ((result (aio-await (apply #'-counsel-spotify-request-p rest))))
-    (if (eq result 401)
-      (progn
-        (message "Got 401.")
-        (aio-await (counsel-spotify-refresh-oauth-token-pkce))
-        (counsel-spotify-oauth2-parse-response
-         (aio-await (apply #'-counsel-spotify-request-p rest))))
-      result)))
+(cl-defun counsel-spotify-request-p (url
+                                     &key
+                                     data
+                                     type
+                                     headers
+                                     (encoding 'utf-8)
+                                     (parser #'json-read))
+  (aio-with-async
+   (let* ((result (aio-await (-counsel-spotify-request-p
+                              url
+                              :data data
+                              :type type
+                              :headers headers
+                              :encoding encoding
+                              :parser parser))))
+     (if (eq result 401)
+         (progn
+           (aio-await (counsel-spotify-refresh-oauth-token-pkce))
+           (let* ((result (aio-await (-counsel-spotify-request-p
+                                      url
+                                      :data data
+                                      :type type
+                                      :headers (aio-await (counsel-spotify-oauth-bearer-headers-p))
+                                      :encoding encoding
+                                      :parser parser))))
+             result))
+       result))))
 
 (defun counsel-spotify-oauth2-make-access-request (url data)
   "Make a non-blocking access request to URL using DATA in POST.
