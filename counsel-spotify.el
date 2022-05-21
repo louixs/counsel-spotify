@@ -100,7 +100,6 @@
 (aio-defun counsel-spotify-oauth2-fetch-by-type (type)
   (let* ((result (aio-await (counsel-spotify-oauth2-search-p "" :type type))))
     (mapcar #'counsel-spotify-format result)))
-          
 
 ;;;###autoload
 (defun counsel-spotify-search-track ()
@@ -171,7 +170,6 @@
   ;; we don't need to call the API everytime we enter the search-term
   (counsel-spotify-async-fetch-read-by-type "Search user playlist: "
                                             '(user-playlist)))
-
 
 ;;;###autoload
 (defun counsel-spotify-new-releases ()
@@ -247,6 +245,56 @@
    (counsel-spotify-oauth2-search-by :type '(show))
    :dynamic-collection t
    :action #'counsel-spotify-play-string))
+
+;;; ---- for searcing podcasts and then list their episodes
+(defun counsel-spotify-get-id-from-uri (uri)
+  (car
+   (cdr
+    (cdr
+     (split-string uri ":")))))
+
+(defun counsel-spotify-get-id (spotify-object-string)
+  (counsel-spotify-get-id-from-uri
+   (uri (counsel-spotify-unwrap-spotify-object spotify-object-string))))
+
+(cl-defun counsel-spotify-make-podcast-episodes-query (id &key
+                                                          (limit 20))
+  (concat counsel-spotify-spotify-api-url "/shows/" id "/episodes" "?limit=" (number-to-string limit)))
+
+(aio-defun counsel-spotify-fetch-podcast-episodes (podcast-id)
+  (let* ((query-url (counsel-spotify-make-podcast-episodes-query podcast-id))
+         (result (aio-await (counsel-spotify-request-p
+                             query-url
+                             :type "GET"
+                             :encoding 'binary
+                             :headers (aio-await (counsel-spotify-oauth-bearer-headers-p))))))
+    (counsel-spotify-oauth2-parse-response `((episodes . ,result)) 'episodes)))
+
+(aio-defun counsel-spotify-podcast-episodes (podcast-id)
+  (let* ((results (aio-await (counsel-spotify-fetch-podcast-episodes podcast-id))))
+    (mapcar #'counsel-spotify-format results)))
+
+(defun counsel-spotify-get-podcast-episodes (formatted-spotify-object-string)
+  "Strings should be formatted with counsel-spotify-format.
+   This function is meant to receive the results from counsel-spotify-update-ivy-candidates"
+  (funcall
+   (aio-lambda ()
+     (ivy-read
+      "Please select episodes to play: "
+      (aio-await (counsel-spotify-podcast-episodes (counsel-spotify-get-id formatted-spotify-object-string)))
+      :action #'counsel-spotify-play-string
+      :caller ""))))
+
+;;;###autoload
+(defun counsel-spotify-search-podcasts-episodes ()
+  "Bring Ivy frontend to choose and search podcasts, and list its episodes to play"
+  (interactive)
+  (counsel-spotify-verify-credentials)
+  (ivy-read
+   "Search podcasts first: "
+   (counsel-spotify-oauth2-search-by :type '(show))
+   :dynamic-collection t
+   :action #'counsel-spotify-get-podcast-episodes))
 
 ;;;###autoload
 (defun counsel-spotify-search-episode ()

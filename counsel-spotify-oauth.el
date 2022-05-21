@@ -43,7 +43,7 @@
   "Auth token data returned by oauth2-auth-and-store function from the oauth2 package."
   :type 'string :group 'counsel-spotify)
 
-(defcustom counsel-spotify-spotify-api-scopes "playlist-read-private playlist-read-collaborative user-read-private user-read-email user-read-currently-playing user-read-playback-state user-library-modify user-top-read"
+(defcustom counsel-spotify-spotify-api-scopes "playlist-read-private playlist-read-collaborative user-read-private user-read-email user-read-currently-playing user-read-playback-state user-library-modify user-top-read user-read-playback-position"
   "Variable to define spotify API scopes.
    If adding new feature you may need to add new scope.
    Here is the list of scopes: https://developer.spotify.com/documentation/general/guides/scopes/"
@@ -252,10 +252,9 @@
                   (aio-resolve promise (lambda () data))))
       :error (cl-function
               (lambda (&rest args &key error-thrown &allow-other-keys)
-                (let ((p promise))
-                  (if (consp error-thrown)
-                      (aio-resolve p (lambda () (car (cdr (cdr error-thrown)))))
-                      (aio-resolve p (lambda () error-thrown))))))))))
+                (if (consp error-thrown)
+                    (aio-resolve promise (lambda () (car (cdr (cdr error-thrown)))))
+                    (aio-resolve promise (lambda () error-thrown)))))))))
 
 (cl-defun counsel-spotify-request-p (url
                                      &key
@@ -274,8 +273,9 @@
                               :parser parser))))
      (if (eq result 401)
          (progn
+           (message "Got 401")
            (aio-await (counsel-spotify-refresh-oauth-token-pkce))
-           (let* ((result (aio-await (-counsel-spotify-request-p
+           (let* ((result (aio-await (counsel-spotify-request-p
                                       url
                                       :data data
                                       :type type
