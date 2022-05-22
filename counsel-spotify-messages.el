@@ -22,17 +22,21 @@
 ;;; Code:
 (require 'counsel-spotify-search)
 
-(defun ms->min (ms)
-  (let* ((seconds-of-song (/ ms 1000.0))
-         (second-left-in-song (% (round seconds-of-song) 60))
-         (minutes-in-song (truncate (/ seconds-of-song 60))))
-    (format "%d:%0.2d"
-            minutes-in-song
-            second-left-in-song)))
-
 (defun counsel-spotify-format-duration (duration-in-ms)
-  (let* ((ms (ms->min duration-in-ms)))
-    (format "(%s)" ms)))
+  (let* ((seconds-of-song (/ duration-in-ms 1000.0))
+         (second-left-in-song (% (round seconds-of-song) 60))
+         (minutes-of-song  (truncate (/ seconds-of-song 60)))
+         (minutes-in-song (% (round minutes-of-song) 60))
+         (hours-in-song  (truncate (/ minutes-of-song 60)))
+         (hour? (< 0 hours-in-song)))
+   (if hour?
+       (format "%d:%0.2d:%0.2d"
+               hours-in-song
+               minutes-in-song
+               second-left-in-song)
+       (format "%d:%0.2d"
+               minutes-in-song
+               second-left-in-song))))
 
 (cl-defgeneric counsel-spotify-format (element)
   "Format an ELEMENT to be shown in the minibuffer.")
@@ -49,7 +53,7 @@
 (cl-defmethod counsel-spotify-format ((track counsel-spotify-track))
   "Format a TRACK Spotify object."
   (let* ((duration (counsel-spotify-format-duration (duration-in-ms track))))
-    (format "%s %s - %s [%s]"
+    (format "(%s) %s - %s [%s]"
             duration
             (name (artist track))
             (name track)
@@ -65,13 +69,13 @@
 
 (cl-defmethod counsel-spotify-format ((episode counsel-spotify-episode))
   "Format an EPISODE Spotify object."
-  (let* ((duration (counsel-spotify-format-duration (duration-in-ms  episode))))
-    (format "%s %s | [%s]" duration (name episode) (description episode))))
+  (let* ((duration (counsel-spotify-format-duration (duration-in-ms episode))))
+    (format "(%s) %s | [%s]" duration (name episode) (description episode))))
 
 (defun counsel-spotify-format-playback-time (current-playback)
-  (let* ((progress-in-min (ms->min (progress-in-ms current-playback)))
-         (duration-in-min (ms->min (duration-in-ms current-playback))))
-    (format "(%s / %s)"
+  (let* ((progress-in-min (counsel-spotify-format-duration (progress-in-ms current-playback)))
+         (duration-in-min (counsel-spotify-format-duration (duration-in-ms current-playback))))
+    (format "(%s/%s)"
             progress-in-min
             duration-in-min)))
 

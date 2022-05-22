@@ -22,3 +22,6 @@
 (defun counsel-spotify-get-id (spotify-object-string)
   (counsel-spotify-get-id-from-uri
    (uri (counsel-spotify-unwrap-spotify-object spotify-object-string))))
+
+(provide 'counsel-spotify-utils)
+;;; counsel-spotify-utils.el ends here

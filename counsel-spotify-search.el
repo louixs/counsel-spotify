@@ -181,9 +181,9 @@
 
 (cl-defmethod counsel-spotify-parse-spotify-object (a-spotify-current-playback-object (_type (eql current-playback-episode)))
   "Parse a A-SPOTIFY-CURRENT-PLAYBACK-OBJECT of type _TYPE current-playback-episode i.e. podcast episodes "
-  (let* ((progress-in-ms (alist-get 'progress_ms a-spotify-current-playback-object))
+  (let* ((item (alist-get 'item a-spotify-current-playback-object))
+         (progress-in-ms (alist-get 'progress_ms a-spotify-current-playback-object))
          (duration-in-ms (alist-get 'duration_ms item))
-         (item (alist-get 'item a-spotify-current-playback-object))
          (episode-name (get-episode-name item))
          (show-name (get-show-name item))
          (episode-description (get-episode-description item)))
