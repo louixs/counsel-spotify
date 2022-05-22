@@ -72,12 +72,15 @@
 (defclass counsel-spotify-current-playback (counsel-spotify-non-playable)
   ((artist-name :initarg :artist-name :initform "" :reader artist-name)
    (album :initarg :album :initform "" :reader album)
-   (remaining-time-in-ms :initarg :remaining-time-in-ms :initform 0 :reader remaining-time-in-ms)))
+   (duration-in-ms :initarg :duration-in-ms :initform 0 :reader duration-in-ms)
+   (progress-in-ms :initarg :progress-in-ms :initform 0 :reader progress-in-ms)))
+   
 
 (defclass counsel-spotify-current-playback-episode (counsel-spotify-non-playable)
   ((show-name :initarg :show-name :initform "" :reader show-name)
    (episode-description :initarg :episode-description :initform "" :reader episode-description)
-   (remaining-time-in-ms :initarg :remaining-time-in-ms :initform 0 :reader remaining-time-in-ms)))
+   (duration-in-ms :initarg :duration-in-ms :initform 0 :reader duration-in-ms)
+   (progress-in-ms :initarg :progress-in-ms :initform 0 :reader progress-in-ms)))
 
 (cl-defgeneric counsel-spotify-parse-spotify-object (a-spotify-object type)
   "Parse A-SPOTIFY-OBJECT knowing it has the type TYPE.")
@@ -147,18 +150,12 @@
     (alist-get 'album)
     (alist-get 'name)))
 
-(defun counsel-spotify-get-remaining-time-in-ms (currently-playing)
-  (let* ((progress-ms (alist-get 'progress_ms currently-playing))
-         (item (alist-get 'item currently-playing))
-         (duration-ms (alist-get 'duration_ms item))
-         (remaining-ms (- duration-ms progress-ms)))
-    remaining-ms))
-
 ;; for displaying information about current tunes that is not podcast/show episodes
 (cl-defmethod counsel-spotify-parse-spotify-object (a-spotify-current-playback-object (_type (eql current-playback)))
   "Parse a A-SPOTIFY-CURRENT-PLAYBACK-OBJECT of type _TYPE current-playback"
-  (let* ((remaining-time-in-ms (counsel-spotify-get-remaining-time-in-ms a-spotify-current-playback-object))
-         (item (alist-get 'item a-spotify-current-playback-object))
+  (let* ((item (alist-get 'item a-spotify-current-playback-object))
+         (progress-in-ms (alist-get 'progress_ms a-spotify-current-playback-object))
+         (duration-in-ms (alist-get 'duration_ms item))
          (playback-name (alist-get 'name item))
          (artist-name (get-artist-name item))
          (album-name (get-album-name item)))
@@ -166,7 +163,8 @@
                    :name playback-name
                    :artist-name artist-name
                    :album album-name
-                   :remaining-time-in-ms remaining-time-in-ms)))
+                   :duration-in-ms duration-in-ms
+                   :progress-in-ms progress-in-ms)))
 
 (defun get-episode-name (item)
   (->> item
@@ -183,7 +181,8 @@
 
 (cl-defmethod counsel-spotify-parse-spotify-object (a-spotify-current-playback-object (_type (eql current-playback-episode)))
   "Parse a A-SPOTIFY-CURRENT-PLAYBACK-OBJECT of type _TYPE current-playback-episode i.e. podcast episodes "
-  (let* ((remaining-time-in-ms (counsel-spotify-get-remaining-time-in-ms a-spotify-current-playback-object))
+  (let* ((progress-in-ms (alist-get 'progress_ms a-spotify-current-playback-object))
+         (duration-in-ms (alist-get 'duration_ms item))
          (item (alist-get 'item a-spotify-current-playback-object))
          (episode-name (get-episode-name item))
          (show-name (get-show-name item))
@@ -192,7 +191,8 @@
                    :name episode-name
                    :show-name show-name
                    :episode-description episode-description
-                   :remaining-time-in-ms remaining-time-in-ms)))
+                   :duration-in-ms duration-in-ms
+                   :progress-in-ms progress-in-ms)))
 
 (defun counsel-spotify-parse-items (a-spotify-alist-response a-type)
   "Parse every item in A-SPOTIFY-ALIST-RESPONSE as being of the type A-TYPE."

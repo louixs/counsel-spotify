@@ -77,12 +77,14 @@
   (aio-await (counsel-spotify-request-p (concat counsel-spotify-spotify-api-url "/me/player")
                                         :type "GET"
                                         :parser #'json-read
+                                        :encoding 'binary
                                         :headers (aio-await (counsel-spotify-oauth-bearer-headers-p)))))
 
 (aio-defun counsel-spotify-get-currently-playing ()
   (aio-await (counsel-spotify-request-p (concat counsel-spotify-spotify-api-url "/me/player/currently-playing?additional_types=episode")
                                         :type "GET"
                                         :parser #'json-read
+                                        :encoding 'binary
                                         :headers (aio-await (counsel-spotify-oauth-bearer-headers-p)))))
 
 ;; show current playback

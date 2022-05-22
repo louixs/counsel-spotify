@@ -22,13 +22,17 @@
 ;;; Code:
 (require 'counsel-spotify-search)
 
-(defun counsel-spotify-format-duration (duration-in-ms)
-  (let* ((seconds-of-song (/ duration-in-ms 1000.0))
+(defun ms->min (ms)
+  (let* ((seconds-of-song (/ ms 1000.0))
          (second-left-in-song (% (round seconds-of-song) 60))
          (minutes-in-song (truncate (/ seconds-of-song 60))))
-    (format "(%d:%0.2d)"
+    (format "%d:%0.2d"
             minutes-in-song
             second-left-in-song)))
+
+(defun counsel-spotify-format-duration (duration-in-ms)
+  (let* ((ms (ms->min duration-in-ms)))
+    (format "(%s)" ms)))
 
 (cl-defgeneric counsel-spotify-format (element)
   "Format an ELEMENT to be shown in the minibuffer.")
@@ -64,22 +68,29 @@
   (let* ((duration (counsel-spotify-format-duration (duration-in-ms  episode))))
     (format "%s %s | [%s]" duration (name episode) (description episode))))
 
+(defun counsel-spotify-format-playback-time (current-playback)
+  (let* ((progress-in-min (ms->min (progress-in-ms current-playback)))
+         (duration-in-min (ms->min (duration-in-ms current-playback))))
+    (format "(%s / %s)"
+            progress-in-min
+            duration-in-min)))
+
 (cl-defmethod counsel-spotify-format ((current-playback counsel-spotify-current-playback))
   "Format a PLAYBACK Spotify object."
-  (let* ((remaining-time-in-ms (counsel-spotify-format-duration (remaining-time-in-ms current-playback))))
-    (format "%s - %s (Artists) - %s (Album) | %s (Remaining)"
+  (let* ((playback-time (counsel-spotify-format-playback-time current-playback)))
+    (format "%s - %s (Artists) - %s (Album) | %s"
             (name current-playback)
             (artist-name current-playback)
             (album current-playback)
-            remaining-time-in-ms)))
+            playback-time)))
 
 (cl-defmethod counsel-spotify-format ((current-playback counsel-spotify-current-playback-episode))
   "Format a EPISODE PLAYBACK Spotify object."
-  (let* ((remaining-time-in-ms (counsel-spotify-format-duration (remaining-time-in-ms current-playback))))
-    (format "%s - %s (Podcast) | %s (Remaining)"
+  (let* ((playback-time (counsel-spotify-format-playback-time current-playback)))
+    (format "%s - %s (Podcast) | %s"
             (name current-playback)
             (show-name current-playback)
-            remaining-time-in-ms)))
+            playback-time)))
 
 (provide 'counsel-spotify-messages)
 ;;; counsel-spotify-messages.el ends here
