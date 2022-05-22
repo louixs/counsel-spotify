@@ -1,5 +1,7 @@
 # Counsel Spotify
 
+__This is an experimental branch please use at  your own risk.__
+
 Little Emacs package to control Spotify app through an Ivy interface.
 
 > If I have seen further it is by standing on the shoulders of giants.
