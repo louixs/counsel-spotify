@@ -247,16 +247,6 @@
    :action #'counsel-spotify-play-string))
 
 ;;; ---- for searcing podcasts and then list their episodes
-(defun counsel-spotify-get-id-from-uri (uri)
-  (car
-   (cdr
-    (cdr
-     (split-string uri ":")))))
-
-(defun counsel-spotify-get-id (spotify-object-string)
-  (counsel-spotify-get-id-from-uri
-   (uri (counsel-spotify-unwrap-spotify-object spotify-object-string))))
-
 (cl-defun counsel-spotify-make-podcast-episodes-query (id &key
                                                           (limit 20))
   (concat counsel-spotify-spotify-api-url "/shows/" id "/episodes" "?limit=" (number-to-string limit)))
