@@ -42,36 +42,39 @@
   (let* ((id (alist-get 'id item))
          (name (alist-get 'name item))
          (type (alist-get 'type item))
-         ;; If it's a podcast episode, ask user to confirm the episode or the show that user wants to save
-         (type (if (string-equal type "episode") (call-interactively #'counsel-spotify--ask-user-episode-or-show) type))
          (id (if (string-equal type "show") (alist-get 'id (alist-get 'show item)) id))
-         (name (if (string-equal type "show") (alist-get 'name (alist-get 'show item)) name))
-         (save-to (cond
-                   ((string-equal type "track") "tracks")
-                   ((string-equal type "episode") "episodes")
-                   ((string-equal type "show") "shows")))
-         (added-msg (concat "Added " "'" name "'" " (" type ")"  " to your library.")))
+         (name (if (string-equal type "show") (alist-get 'name (alist-get 'show item)) name)))
     `((name . ,name)
       (id . ,id)
-      (save-to . ,save-to)
-      (added-msg . ,added-msg))))
+      (type . ,type))))
+
 
 (aio-defun counsel-spotify--save-current-playback (item)
   (let* ((data (counsel-spotify--parse-playback-item item))
          (id (alist-get 'id data))
-         (save-to (alist-get 'save-to data))
-         (added-msg (alist-get 'added-msg data))
+         ;; If it's a podcast episode, ask user to confirm the episode or the show that user wants to save
+         (save-type (if (string-equal type "episode") (call-interactively #'counsel-spotify--ask-user-episode-or-show) type))
+         (save-to (cond
+                   ((string-equal save-type "track") "tracks")
+                   ((string-equal save-type "episode") "episodes")
+                   ((string-equal save-type "show") "shows")))
+         (added-msg (concat "Added " "'" name "'" " (" type ")"  " to your library."))
          (url (concat counsel-spotify-spotify-api-url
                       "/me/"
                       save-to
                       "?ids="
                       id))
-         (result
-          (aio-await
-           (counsel-spotify-request-p url
-                                      :type "PUT"
-                                      :parser (lambda () (counsel-spotify--save-current-playback-request-parser added-msg))
-                                      :headers (aio-await (counsel-spotify-oauth-bearer-headers-p))))))))
+         (aio-await
+          (counsel-spotify-request-p url
+                                     :type "PUT"
+                                     :parser (lambda () (counsel-spotify--save-current-playback-request-parser added-msg))
+                                     :headers (aio-await (counsel-spotify-oauth-bearer-headers-p)))))))
+
+(aio-defun counsel-spotify-get-current-playback-id ()
+  (let* ((data (aio-await (counsel-spotify--get-current-playback-data-p)))
+         (parsed (counsel-spotify--parse-playback-item data)))
+    (alist-get 'id parsed)))
+         
 
 (aio-defun counsel-spotify-get-current-playback-state ()
   (aio-await (counsel-spotify-request-p (concat counsel-spotify-spotify-api-url "/me/player")

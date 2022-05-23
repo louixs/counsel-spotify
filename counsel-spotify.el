@@ -304,10 +304,18 @@
    By PUT:ting the retrieved ID to the tracks API, this saves the currently playing track to user's 'Your Music' library.
    Basically same as clicking on the heart/like symbol by the tracks. The saved/liked track are stored in the Liked Songs playlist on Spotify."
   (interactive)
+  (counsel-spotify-verify-credentials)
   (funcall
    (aio-lambda ()
      (let ((data (aio-await (counsel-spotify--get-current-playback-data-p))))
        (counsel-spotify--save-current-playback data)))))
+
+(defun counsel-spotify-add-track-to-playlist ()
+  (interactive)
+  (counsel-spotify-verify-credentials)
+  (aio-with-async
+    (let* ((id (aio-await (counsel-spotify-get-current-playback-id))))
+      (message "id" id))))
 
 (provide 'counsel-spotify)
 ;;; counsel-spotify.el ends here
