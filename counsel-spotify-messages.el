@@ -1,4 +1,4 @@
-;;; counsel-spotify-messages.el --- Show Spotify objects in Ivy and the minibuffer
+;;; counsel-spotify-messages.el --- Show Spotify objects in Ivy and the minibuffer -*- lexical-binding: t -*-
 
 ;; Copyright (C)
 

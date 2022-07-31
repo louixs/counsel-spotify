@@ -1,5 +1,4 @@
-;;; counsel-spotify-notifications.el --- Notify the user of playback eventse
-
+;;; counsel-spotify-notifications.el --- Notify the user of playback events -*- lexical-binding: t -*-
 ;; Copyright (C)
 
 ;; This file is not part of GNU Emacs.

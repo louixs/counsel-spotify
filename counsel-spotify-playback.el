@@ -1,4 +1,4 @@
-;;; counsel-spotify-playback.el --- Description -*- lexical-binding: t; -*-
+;;; counsel-spotify-playback.el --- Description -*- lexical-binding: t -*-
 ;;
 ;;
 ;; Author: Ryuei Sasaki <https://github.com/louixs>

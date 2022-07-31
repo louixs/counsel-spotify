@@ -1,4 +1,4 @@
-;;; counsel-spotify.el --- Control Spotify search and select music with Ivy -*- lexical-binding: t; -*-
+;;; counsel-spotify.el --- Control Spotify search and select music with Ivy -*- lexical-binding: t -*-
 
 ;; Copyright (C)
 ;; Author: Lautaro García <https://github.com/Lautaro-Garcia>

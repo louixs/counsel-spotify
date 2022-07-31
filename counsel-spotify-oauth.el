@@ -1,4 +1,4 @@
-;;; counsel-spotify-oauth.el --- Description -*- lexical-binding: t; -*-
+;;; counsel-spotify-oauth.el --- Description -*- lexical-binding: t -*-
 ;;
 ;; Copyright (C) 2021 John Doe
 ;;

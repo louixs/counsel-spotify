@@ -1,4 +1,4 @@
-;;; counsel-spotify-backends.el --- Backends to comunicate with the native Spotify app
+;;; counsel-spotify-backends.el --- Backends to comunicate with the native Spotify app -*- lexical-binding: t -*-
 
 ;; Copyright (C)
 
@@ -118,9 +118,9 @@ Some clients, such as mopidy, can run as system services."
   (counsel-spotify-tell-spotify-to-toggle (funcall action (commands backend))))
 
 (cl-defmethod counsel-spotify-tell-backend-to-toggle ((backend counsel-spotify-linux-backend) action)
-  "Tell Linux BACKEND to execute the given ACTION to toggle."
+  "Tell Linux BACKEND to execute the given ACTION to toggle.")
   ;; (counsel-spotify-call-spotify-via-dbus (funcall action (commands backend)))
-  )
+  
 
 (cl-defgeneric counsel-spotify-tell-backend-to (backend action)
   "Tell the given BACKEND to execute the given ACTION.")

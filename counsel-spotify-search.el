@@ -1,4 +1,4 @@
-;;; counsel-spotify-search.el --- Search things through the Spotify Search API -*- lexical-binding: t; -*-
+;;; counsel-spotify-search.el --- Search things through the Spotify Search API -*- lexical-binding: t -*-
 
 ;; Copyright (C)
 
