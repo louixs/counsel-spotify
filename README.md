@@ -47,3 +47,13 @@ There are defined some basic controllers for the Spotify App
 Well, in that case I think you would be interested in two variables:
 * `counsel-spotify-service-name` is the name of the DBUS service counsel-spotify calls to handle the reproduction of a song
 * `counsel-spotify-use-system-bus-p` for some clients that use the system bus instead of the session
+
+## For devs
+A log of some of the issues found while developing experimental features and some other tricky issues we've run into.
+
+### void variable cl--nm
+When running some interactive functions e.g. `counsel-spotify-search-user-playlists`, after upgrading to Emacs 29.0.50, 
+it didn't work and an error like this showed up `void variable cl--nm`. This was resolved by enabling lexical-binding 
+for all the files by adding `-*- lexical-binding:t -*-` on top of each file. I found the solution on [this github issue](https://github.com/sigma/mocker.el/issues/10) for
+another elisp library.
+
