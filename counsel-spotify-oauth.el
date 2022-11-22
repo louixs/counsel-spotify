@@ -165,7 +165,7 @@
 ;; Proof Key for Code Exchange (PKCE)
 ;; Pick the the character length for the random string
 (defun counsel-spotify-oauth--random-char-length (start end)
-  (let* ((allowed-char-lengths  (number-sequence start end))
+  (let* ((allowed-char-lengths (number-sequence start end))
          (allowed-char-lenghts-count (length allowed-char-lengths))
          (ind (% (random) allowed-char-lenghts-count)))
     (nth ind allowed-char-lengths)))
